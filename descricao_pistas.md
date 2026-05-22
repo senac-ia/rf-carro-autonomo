@@ -33,10 +33,10 @@ A ideia é que cada pista introduza **uma habilidade nova** que o agente precisa
 Reta corredor 4, curva 90° à direita, vertical corredor 3.
 Carro aprende: "quando a LIDAR frontal cai, freio e viro à direita".
 
-### pista_02 — "Reta + curva única à esquerda" (~30×20)
-**Conceito novo:** mesma situação mas virando para o LADO OPOSTO.
-Layout diferente da 01 (não é espelho): horizontal corredor 3 + vertical corredor 4. Inverte tanto direção quanto larguras.
-Carro aprende: virar à esquerda quando convém — generalização da política.
+### pista_02 — "Duplo L esquerda + curva oposta" (~32×24)
+**Conceito novo:** repetir a mesma curva (esquerda) em locais diferentes + uma virada oposta no final.
+Reta corredor 4 (going east), L esquerda 90°, vertical corredor 3, L esquerda 90° (mesma direção), horizontal corredor 4 going west, L direita 90° (oposta) no final, vertical corredor 3. Total: 3 curvas.
+Carro aprende: política precisa generalizar "virar esquerda" entre dois contextos diferentes + alternar para direita no momento certo. Não basta decorar "qual ação tomar depois da largada".
 
 ### pista_03 — "S aberto (duas curvas opostas)" (~32×20)
 **Conceito novo:** decidir sequência de viradas.
@@ -53,10 +53,10 @@ Carro aprende: ajuste de ângulo em pequenos incrementos (sem precisar freiar mu
 Top corredor 4, lateral direita corredor 3, fundo corredor 4. Carro precisa fazer 180° efetivo.
 Carro aprende: orientação espacial não importa, só o que LIDAR mostra à frente.
 
-### pista_06 — "Múltiplas curvas combinadas" (~30×22)
-**Conceito novo:** transição entre 3+ direções em sequência.
-Três segmentos com larguras 4, 3, 4, conectados por duas curvas de ~45°.
-Carro aprende: encadear múltiplas decisões sem reset mental.
+### pista_06 — "U-turn com chicane interna" (~34×24)
+**Conceito novo:** U-turn (180°) com obstáculo embutido no meio — ponte pedagógica para as chicanes do nível médio.
+Reta corredor 4 (going east), L direita 90° (desce), vertical corredor 3, mini-chicane (4 mini-curvas em S, corredor 3), continuação vertical, L direita 90° (vai oeste, corredor 4), reta final. Total: 6 curvas.
+Carro aprende: combinar U-turn de 180° com chicane no caminho — não basta "girar 180° e seguir reto". O agente precisa frear e desviar no meio do U, preparando-o para os corredores 3 das pistas médias.
 
 ## NÍVEL 2 — MÉDIO (mais difícil, curvas combinadas)
 
@@ -128,11 +128,11 @@ Carro aprende: teste final — a política treinada precisa funcionar para qualq
 
 Q-Learning tabular não generaliza entre estados — o agente precisa **visitar variações** para aprender uma política robusta. A progressão das fáceis garante isto:
 
-1. **01**: política mínima viável (1 curva).
-2. **02**: simetria — o agente não pode aprender só "vira direita".
-3. **03**: sequência — política depende do contexto, não só do estado atual.
-4. **04**: gradiente — viradas suaves em vez de "tudo ou nada".
-5. **05**: rotação 180° — orientação não importa, só LIDAR.
-6. **06**: encadeamento — múltiplas decisões consecutivas.
+1. **01**: política mínima viável (1 curva à direita).
+2. **02**: repetir a mesma curva em contextos diferentes + alternar para a oposta.
+3. **03**: sequenciar curvas opostas (S).
+4. **04**: viradas suaves graduais em vez de "tudo ou nada".
+5. **05**: rotação 180° (U-turn simples).
+6. **06**: U-turn COM obstáculo embutido — ponte para chicanes do nível médio.
 
 Já nas médias, o agente combina esses elementos sob pressão (corredor mais estreito ou mais curvas seguidas). Difíceis exigem velocidade controlada (gargalos corredor 2).
