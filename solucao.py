@@ -5,7 +5,7 @@ Você deve implementar:
     - AgenteQLearning  (tabular)
 
 E preencher main() para orquestrar treinamento, avaliação e geração dos arquivos
-de saída descritos no enunciado (q_learning.txt para T4.1 e cliff.txt para T4.2).
+de saída descritos no README (q_learning.txt para T4.1 e cliff.txt para T4.2).
 
 Uso:
     python solucao.py pistas/pista_03.txt
@@ -153,7 +153,7 @@ def treinar_ou_carregar(nome, fn_treinar, recarregar=False):
 
 def escrever_saida(caminho, nome_algoritmo, env, resultado_avaliacao, n_episodios_treinados, K):
     """
-    Escreve um arquivo no formato esperado pelo enunciado:
+    Escreve um arquivo no formato esperado pelo README (§3.4):
 
     === Pista: <nome> ===
     Algoritmo: <nome>
@@ -164,7 +164,7 @@ def escrever_saida(caminho, nome_algoritmo, env, resultado_avaliacao, n_episodio
     Recompensa total: R
     Sucesso: SIM/NAO
     """
-    # TODO: implementar conforme formato do enunciado
+    # TODO: implementar conforme formato do README §3.4
     raise NotImplementedError
 
 
@@ -177,7 +177,7 @@ def main():
     parser.add_argument("pista", help="Caminho para arquivo de pista (treino principal)")
     parser.add_argument("--episodios", type=int, default=30_000)
     parser.add_argument("--max-passos", type=int, default=500)
-    parser.add_argument("--K", type=int, default=5, help="Baldes da discretização (fixo em 5 no enunciado)")
+    parser.add_argument("--K", type=int, default=5, help="Baldes da discretização (fixo em 5; ver README §2.2)")
     args = parser.parse_args()
 
     print(f"Carregando pista: {args.pista}")
@@ -195,7 +195,7 @@ def main():
 
     # ─── Outras tarefas ────────────────────────────────────────────────────
     # T4.2 (Cliff-style): retreine o Q-Learning em pista_07.txt com a mesma
-    # configuração e gere cliff.txt. Veja docs/enunciado.md §4.2 para detalhes.
+    # configuração e gere cliff.txt. Veja README §3.2 para detalhes.
 
     print("\nPronto.")
 

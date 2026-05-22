@@ -2,7 +2,7 @@
 
 Este documento explica o algoritmo de **Q-Learning** que você precisa implementar no EP do carrinho. Cobre a intuição, a matemática, o pseudocódigo e dicas práticas de implementação em Python.
 
-Pré-requisitos: você já leu `enunciado.md` (especialmente §1 sobre o ambiente, §2 sobre a representação de estado e discretização, e §3 sobre recompensas).
+Pré-requisitos: você já leu o `README.md` do projeto (especialmente §1 sobre o ambiente, §2 sobre a representação de estado e discretização, e §1.5 sobre recompensas).
 
 ---
 
@@ -287,7 +287,7 @@ Use estes valores como ponto de partida (são os da T4.1 e T4.2):
 |---|---|---|
 | **Episódios de treinamento** | 30.000 | Suficiente para convergência em pistas 03 e 07 com $K=5$. |
 | **Limite de passos por episódio** | 500 | Evita episódios infinitos quando o agente fica girando em círculos. |
-| **Discretização $K$** | 5 | Fixo no EP — ver §2.1 do enunciado para a justificativa (casa com os 5 níveis de velocidade). |
+| **Discretização $K$** | 5 | Fixo no EP — ver §2.2 do `README.md` para a justificativa (casa com os 5 níveis de velocidade). |
 | **Taxa de aprendizado $\alpha$** | 0,1 | Padrão de Sutton & Barto. Suficientemente pequeno para não oscilar, grande o bastante para aprender rápido. |
 | **Desconto $\gamma$** | 0,99 | Valoriza chegar à meta (recompensa de +500) mesmo que esteja muitos passos no futuro. |
 | **Exploração $\varepsilon$** | $1{,}0 \to 0{,}05$ linear em 80% dos episódios | Garante exploração ampla no início e refinamento da política no final. |

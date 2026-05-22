@@ -1,6 +1,6 @@
 # Anexo A: O que são sensores tipo LIDAR
 
-A seção 2 do [enunciado](enunciado.md) se refere a “sensores tipo LIDAR” como representação do estado do carro. Este anexo explica o conceito para quem nunca encontrou o termo.
+A §1.4 do `README.md` se refere a “sensores tipo LIDAR” como representação do estado do carro. Este anexo explica o conceito para quem nunca encontrou o termo.
 
 ## A.1 LIDAR no mundo real
 
