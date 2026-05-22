@@ -166,13 +166,11 @@ A calibração final dos hiperparâmetros é parte do EP — você vai precisar 
 
 ## Tarefas a implementar
 
-O EP é dividido em cinco tarefas (detalhes em `docs/enunciado.md`, §4):
+O EP é dividido em três tarefas (detalhes em `docs/enunciado.md`, §4):
 
-- **T4.1 — Q-Learning Tabular** em `pista_03.txt`. Treine, avalie com ε=0 e gere `q_learning.txt`.
-- **T4.2 — SARSA Tabular** na mesma pista, mesma configuração. Gere `sarsa.txt`.
-- **T4.3 — Estudo da Discretização (obrigatório):** repita Q-Learning com K=3 e K=8 e compare. Gere `discretizacao.txt`.
-- **T4.4 — Cliff-style (Q vs SARSA com risco)** em `pista_07.txt`. Compare histórico de aprendizado, recompensa final, velocidade média e trajetória. Gere `comparativo.txt`.
-- **T4.5 — Teste de Transferência:** pegue o Q treinado na T4.1 (sem re-treinar) e avalie em `pista_07.txt`. Gere `transferencia.txt`.
+- **T4.1 — Q-Learning Baseline** em `pista_03.txt` com K=5. Treine, avalie com ε=0 e gere `q_learning.txt`.
+- **T4.2 — Estudo da Discretização (obrigatório):** repita Q-Learning com K=3 e K=8 (reutilize o K=5 da T4.1) e compare os três pontos. Gere `discretizacao.txt`.
+- **T4.3 — Cliff-style (Q vs SARSA com risco)** em `pista_07.txt`. Aqui você implementa SARSA pela primeira vez. Compare histórico de aprendizado, recompensa final, velocidade média e trajetória. Gere `comparativo.txt`.
 
 ### Hiperparâmetros padrão (baseline do enunciado)
 
@@ -185,7 +183,7 @@ O EP é dividido em cinco tarefas (detalhes em `docs/enunciado.md`, §4):
 | Desconto $\gamma$ | 0,99 |
 | Exploração $\varepsilon$ | decai linearmente de 1,0 a 0,05 nos primeiros 80% dos episódios |
 
-Use estes valores como ponto de partida. A T4.3 pede explicitamente variar $K \in \{3, 8\}$; em outras tarefas, justifique no relatório qualquer desvio.
+Use estes valores como ponto de partida. A T4.2 pede explicitamente variar $K \in \{3, 8\}$; em outras tarefas, justifique no relatório qualquer desvio.
 
 ### Formato dos arquivos de saída
 
@@ -203,7 +201,7 @@ Recompensa total: 478.4
 Sucesso: SIM
 ```
 
-Para tarefas com múltiplas variantes (T4.3 com dois $K$, T4.4 com dois algoritmos), concatene blocos no mesmo arquivo, um por variante.
+Para tarefas com múltiplas variantes (T4.2 com três $K$, T4.3 com dois algoritmos), concatene blocos no mesmo arquivo, um por variante.
 
 ## Salvamento de modelos
 
@@ -213,12 +211,11 @@ Estrutura esperada do diretório:
 
 ```
 treinamento/
-├── q_learning_pista_03.pkl   ← T4.1
-├── sarsa_pista_03.pkl        ← T4.2
-├── q_learning_K3.pkl         ← T4.3 (discretização grosseira)
-├── q_learning_K8.pkl         ← T4.3 (discretização fina)
-├── q_learning_pista_07.pkl   ← T4.4
-└── sarsa_pista_07.pkl        ← T4.4
+├── q_learning_K5_pista_03.pkl   ← T4.1 baseline (reusado por T4.2 como K=5)
+├── q_learning_K3_pista_03.pkl   ← T4.2 (discretização grosseira)
+├── q_learning_K8_pista_03.pkl   ← T4.2 (discretização fina)
+├── q_learning_K5_pista_07.pkl   ← T4.3 (Cliff-style)
+└── sarsa_K5_pista_07.pkl        ← T4.3 (Cliff-style)
 ```
 
 Cada `.pkl` deve guardar pelo menos: tabela Q, K usado, nº de episódios, hiperparâmetros, seed, pista usada e histórico de recompensas (em janela móvel de 100). Esses arquivos devem ser commitados no repositório — assim o professor reproduz as avaliações sem re-treinar.
@@ -242,13 +239,11 @@ Veja `solucao.py` — ele tem placeholders para os dois algoritmos (`AgenteQLear
 
 ## Relatório
 
-O relatório deve cobrir cinco seções (detalhes em `docs/enunciado.md`, §6):
+O relatório deve cobrir três seções (detalhes em `docs/enunciado.md`, §6):
 
-1. **Modelagem do MDP** — espaço de estados após discretização, ações, recompensa, estrutura de armazenamento de $Q[s,a]$.
-2. **Resultados Q-Learning vs. SARSA** na pista base — histórico de aprendizado (janela móvel de 100), passos até completar, velocidade média, perfil de uso de cada ação.
-3. **Estudo da Discretização** — comparativo entre os dois valores de $K$ testados, trade-off, recomendação.
-4. **Comparação Q-Learning vs. SARSA com risco (Cliff-style)** — qual algoritmo sofre menos durante exploração, qual termina com melhor política, diferenças qualitativas nas trajetórias.
-5. **Teste de Transferência** — como o Q treinado em `pista_03.txt` se sai em `pista_07.txt`, por que falha, o que isso revela sobre representação tabular.
+1. **Modelagem do MDP e Q-Learning Baseline (T4.1)** — espaço de estados após discretização, ações, recompensa, estrutura de armazenamento de $Q[s,a]$, e os resultados do baseline (passos até completar, velocidade média, perfil de uso de cada ação).
+2. **Estudo da Discretização (T4.2)** — comparativo entre os três valores de $K$ (3, 5, 8), trade-off observado, qual $K$ você recomenda e por quê.
+3. **Cliff-style: Q-Learning vs. SARSA (T4.3)** — qual algoritmo sofre menos durante exploração, qual termina com melhor política, velocidade média de cada, diferenças qualitativas nas trajetórias observadas via animação no terminal.
 
 ## Dúvidas
 

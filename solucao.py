@@ -6,8 +6,7 @@ Você deve implementar:
     - AgenteSARSA      (tabular)
 
 E preencher main() para orquestrar treinamento, avaliação e geração dos arquivos
-de saída descritos no enunciado (q_learning.txt, sarsa.txt, discretizacao.txt,
-comparativo.txt, transferencia.txt).
+de saída descritos no enunciado (q_learning.txt, discretizacao.txt, comparativo.txt).
 
 Uso:
     python solucao.py pistas/pista_03.txt
@@ -230,11 +229,10 @@ def main():
         pass
 
     # ─── Outras tarefas ────────────────────────────────────────────────────
-    # T4.3: Estudo da Discretização — repita Q-Learning com K=3 e K=8
-    # T4.4: Comparação Q-Learning vs SARSA com risco — use pista_07.txt
-    # T4.5: Teste de Transferência — pegue Q da T4.1 e avalie em pista_07.txt
+    # T4.2: Estudo da Discretização — repita Q-Learning com K=3 e K=8 (K=5 já feito acima)
+    # T4.3: Cliff-style (Q-Learning vs SARSA) — use pista_07.txt
     #
-    # Veja o enunciado para detalhes de cada tarefa.
+    # Veja docs/enunciado.md para detalhes de cada tarefa.
 
     print("\nPronto.")
 

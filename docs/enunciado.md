@@ -128,7 +128,7 @@ Recompensa total por passo: $r = r_\text{progresso} + r_\text{tempo}$ (mais um d
 
 ## 4. Tarefas
 
-### 4.1 Q-Learning Tabular
+### 4.1 Q-Learning Baseline
 
 Implemente Q-Learning com $\varepsilon$-greedy. Treine na pista `pista_03.txt` (curva moderada).
 
@@ -145,6 +145,7 @@ Ao final, **avalie a política aprendida** com $\varepsilon = 0$ (gulosa) e gere
 
 ```
 === Pista: pista_03.txt ===
+Algoritmo: Q-Learning
 Episódios de treinamento: 30000
 Discretização: K=5
 Tempo de chegada (passos): 27
@@ -154,21 +155,14 @@ Recompensa total: 478.4
 Sucesso: SIM
 ```
 
-### 4.2 SARSA Tabular
+### 4.2 Estudo da Discretização (obrigatório)
 
-Implemente SARSA com a **mesma configuração de hiperparâmetros** da T4.1, na **mesma pista**.
-
-Gere `sarsa.txt` com formato idêntico.
-
-> Lembre-se da diferença chave: o alvo TD do SARSA usa $Q(s', a')$ onde $a'$ é amostrado da política $\varepsilon$-greedy, **não** $\max_{a'}$.
-> 
-
-### 4.3 Estudo da Discretização (obrigatório)
-
-Repita o treinamento de **Q-Learning** com 2 valores de $K$:
+Repita o treinamento de **Q-Learning** com 2 valores adicionais de $K$:
 
 - $K = 3$ (grosseira)
 - $K = 8$ (fina)
+
+Junto com o $K = 5$ do baseline (T4.1), você terá 3 pontos para comparar.
 
 Para cada $K$, reporte:
 
@@ -177,11 +171,13 @@ Para cada $K$, reporte:
 - Tempo de chegada da política final.
 - Sucesso da política final.
 
-Discuta o trade-off — qual $K$ aprende mais rápido? Qual chega à melhor política final? Por quê?
+Gere `discretizacao.txt` com um bloco por valor de $K$. Discuta o trade-off — qual $K$ aprende mais rápido? Qual chega à melhor política final? Por quê?
 
-### 4.4 Comparação Q-Learning vs. SARSA em pista com risco
+### 4.3 Comparação Q-Learning vs. SARSA em pista com risco (Cliff-style)
 
-Essa tarefa é o coração pedagógico do EP — reproduz a essência do experimento *Cliff Walking* do Sutton & Barto, mas no domínio do carrinho.
+Essa tarefa é o coração pedagógico do EP — reproduz a essência do experimento *Cliff Walking* do Sutton & Barto, mas no domínio do carrinho. **Aqui você implementa SARSA pela primeira vez.**
+
+> Lembre-se da diferença chave entre os dois algoritmos: o alvo TD do **SARSA** usa $Q(s', a')$ onde $a'$ é amostrado da política $\varepsilon$-greedy, **não** $\max_{a'}$ como no Q-Learning. Por isso SARSA é **on-policy** (a política sendo melhorada é a mesma usada para coletar dados) e Q-Learning é **off-policy**.
 
 Use a pista `pista_07.txt` (pista com curva apertada — alto risco de colisão durante exploração).
 
@@ -195,34 +191,16 @@ Compare:
 - **Velocidade média** da política aprendida. Qual é mais “agressivo”?
 - **Trajetória visual** — use a animação no terminal de `visualize.py` (`renderizar_episodio`) para inspecionar a política final de cada algoritmo. As trajetórias passam por lugares diferentes? Mais perto/longe das paredes? Descreva o que observou no relatório (capturar o terminal em texto ou descrever em prosa basta).
 
-Discuta no relatório se os resultados batem com a teoria que você viu em aula sobre on-policy vs. off-policy.
+Gere `comparativo.txt` com um bloco para Q-Learning e outro para SARSA. Discuta no relatório se os resultados batem com a teoria que você viu em aula sobre on-policy vs. off-policy.
 
-### 4.5 Teste de Transferência
-
-Pegue a **mesma tabela $Q$ treinada na T4.1** (na `pista_03.txt`) — sem nenhum re-treino — e use-a para avaliar (com $\varepsilon = 0$) em **outra pista**: a `pista_07.txt`.
-
-Reporte:
-
-- Taxa de sucesso (chegou ou bateu).
-- Tempo de chegada (caso tenha chegado) ou onde colidiu.
-- Recompensa total do episódio.
-
-Compare esses números com o desempenho do mesmo agente na pista em que foi treinado.
-
-**Pergunta-guia:** por que o desempenho cai (ou fracassa completamente) em uma pista nunca vista? O que isso revela sobre a **representação tabular** e sua capacidade de generalização?
-
-> 💡 É **esperado** que a transferência falhe ou seja muito ruim. Esse é o ponto pedagógico: tabular memoriza estados específicos, não aprende padrões transferíveis. Documente o fracasso com a mesma seriedade do sucesso.
-> 
 
 ## 5. Saída do Programa
 
 O programa deve gerar, para cada experimento, um arquivo de saída listando o desempenho final:
 
-- **`q_learning.txt`:** resultado da T4.1 em `pista_03.txt`.
-- **`sarsa.txt`:** resultado da T4.2 em `pista_03.txt`.
-- **`discretizacao.txt`:** resultados da T4.3 (2 valores de K) em `pista_03.txt`.
-- **`comparativo.txt`:** resultados da T4.4 (Q-Learning vs SARSA) em `pista_07.txt`.
-- **`transferencia.txt`:** resultado da T4.5 (Q da T4.1 aplicado em `pista_07.txt`).
+- **`q_learning.txt`:** resultado da T4.1 (Q-Learning baseline) em `pista_03.txt`.
+- **`discretizacao.txt`:** resultados da T4.2 (3 valores de K: 3, 5, 8) em `pista_03.txt`.
+- **`comparativo.txt`:** resultados da T4.3 (Q-Learning vs SARSA) em `pista_07.txt`.
 
 Formato sugerido para cada arquivo:
 
@@ -238,39 +216,28 @@ Recompensa total: 478.4
 Sucesso: SIM
 ```
 
-## 6. Relatório (REAME.md)
+## 6. Relatório (README.md)
 
-### 1. Modelagem do MDP
+### 1. Modelagem do MDP e Q-Learning Baseline (T4.1)
 
 - **Espaço de estados (após discretização):** quantos estados, em teoria? E na prática (após o treinamento)?
 - **Espaço de ações:** justifique se 5 ações são suficientes.
 - **Função de recompensa:** explique como você implementou o reward shaping.
 - **Como você está armazenando $Q[s,a]$ internamente** (dicionário, array NumPy multidimensional)?
 - **Estratégia de discretização** que você adotou.
+- **Resultado do baseline:** quantos passos o Q-Learning leva para completar a pista? Velocidade média atingida? Perfil de uso de cada ação?
 
-### 2. Resultados de Q-Learning vs. SARSA na pista base
+### 2. Estudo da Discretização (T4.2)
 
-- Histórico de aprendizado dos dois algoritmos (recompensa média por episódio em janela móvel de 100, reportado como tabela com marcos ou ASCII).
-- Política aprendida: quantos passos cada algoritmo leva para completar a pista?
-- Velocidade média e perfil de uso de cada ação.
-
-### 3. Estudo da Discretização
-
-- Tabela comparativa para os 2 valores de $K$ testados.
+- Tabela comparativa para os 3 valores de $K$ (3, 5, 8).
 - Discussão do trade-off observado.
 - Qual $K$ você recomenda? Por quê?
 
-### 4. Comparação Q-Learning vs. SARSA com risco (Cliff-style)
+### 3. Comparação Q-Learning vs. SARSA com risco — Cliff-style (T4.3)
 
-- O experimento confirma a teoria? Qual algoritmo sofre menos durante exploração? Qual termina com política melhor?
+- O experimento confirma a teoria sobre on-policy vs. off-policy? Qual algoritmo sofre menos durante exploração? Qual termina com política melhor?
+- Velocidade média de cada política — qual é mais "agressivo"?
 - Discuta com base nas trajetórias observadas via animação no terminal (`renderizar_episodio` em `src/visualize.py`) — as políticas finais são qualitativamente diferentes? Por quê?
-
-### 5. Teste de Transferência
-
-- Como o agente treinado na `pista_03.txt` se comportou na `pista_07.txt`? Reporte os números.
-- Por que o desempenho cai (ou fracassa)? O que a representação tabular **memoriza**, e o que ela **não consegue generalizar**?
-- Pelo vetor de estado ser baseado em sensores LIDAR (e não em coordenadas absolutas), em princípio o agente “vê” padrões similares em pistas diferentes. Por que então a transferência falha mesmo assim? *(Dica: pense na granularidade da discretização e na diferença entre “ver o mesmo padrão” e “aprender a melhor resposta para esse padrão”.)*
-- Em que ponto da pista de teste o agente entra em “estados nunca visitados”? Como isso afeta a política?
 
 ---
 
@@ -314,12 +281,11 @@ seu-projeto/
 ├── src/
 ├── pistas/
 └── treinamento/
-    ├── q_learning_pista_03.pkl     ← modelo Q-Learning da T4.1
-    ├── sarsa_pista_03.pkl          ← modelo SARSA da T4.2
-    ├── q_learning_K3.pkl           ← T4.3
-    ├── q_learning_K8.pkl           ← T4.3
-    ├── q_learning_pista_07.pkl     ← T4.4
-    └── sarsa_pista_07.pkl          ← T4.4
+    ├── q_learning_K5_pista_03.pkl  ← baseline Q-Learning da T4.1 (reusado por T4.2 como K=5)
+    ├── q_learning_K3_pista_03.pkl  ← T4.2 (discretização grosseira)
+    ├── q_learning_K8_pista_03.pkl  ← T4.2 (discretização fina)
+    ├── q_learning_K5_pista_07.pkl  ← T4.3 (Cliff-style)
+    └── sarsa_K5_pista_07.pkl       ← T4.3 (Cliff-style)
 ```
 
 Esses arquivos devem ser **commitados no repositório**. Isso permite ao professor reproduzir as avaliações sem re-treinar.
@@ -482,7 +448,7 @@ estado_para_salvar = {
     "seed": 42,
     "track_used": "pistas/pista_03.txt",
 }
-with open("treinamento/q_learning_pista_03.pkl", "wb") as f:
+with open("treinamento/q_learning_K5_pista_03.pkl", "wb") as f:
     pickle.dump(estado_para_salvar, f)
 ```
 
@@ -517,8 +483,9 @@ def treinar_ou_carregar(nome, treinar_fn, recarregar=False):
         return resultado
 
 # Uso:
-q_data = treinar_ou_carregar("q_learning_pista_03", lambda: treinar_q_learning(env))
-sarsa_data = treinar_ou_carregar("sarsa_pista_03", lambda: treinar_sarsa(env))
+q_baseline = treinar_ou_carregar("q_learning_K5_pista_03", lambda: treinar_q_learning(env, K=5))
+q_cliff = treinar_ou_carregar("q_learning_K5_pista_07", lambda: treinar_q_learning(env_07, K=5))
+sarsa_cliff = treinar_ou_carregar("sarsa_K5_pista_07", lambda: treinar_sarsa(env_07, K=5))
 ```
 
 Para forçar re-treinamento (útil ao depurar), passe `recarregar=True` ou simplesmente delete o arquivo `.pkl`.
