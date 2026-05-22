@@ -28,7 +28,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from env import AmbienteCarro  # noqa: E402
-# from visualize import renderizar_episodio  # use isto para gerar GIFs do seu agente
+# from visualize import renderizar_episodio  # use isto para animar seu agente no terminal
 
 
 # === Configuração ===

@@ -108,42 +108,93 @@ class AmbienteCarro:
     """
     Ambiente do carrinho. API inspirada no Gymnasium mas implementada do zero.
 
-    Métodos principais:
-        reset() -> obs
-        step(action) -> (obs, reward, terminated, truncated, info)
+    Fluxo de uso típico (interação agente ↔ ambiente):
+        1. env = AmbienteCarro("pistas/pista_XX.txt")   # cria o ambiente
+        2. obs = env.reset()                            # inicia um episódio
+        3. loop:
+               action = politica(obs)                   # agente decide a ação
+               obs, reward, terminated, truncated, info = env.step(action)
+               if terminated or truncated: break        # episódio acabou
+
+    Convenções de coordenadas:
+        - x = coluna do grid (cresce para a direita)
+        - y = linha do grid (cresce para BAIXO — convenção de imagem, não de matemática)
+        - theta = 0 aponta para +x (leste);  theta = pi/2 aponta para +y (sul)
     """
 
     def __init__(self, caminho_pista: str, max_steps: int = 500, seed: Optional[int] = None):
+        # Carrega a pista do arquivo emoji e identifica largada/chegada.
         self.grid, self.celula_largada, self.celula_chegada = carregar_pista(caminho_pista)
+
+        # Pré-computa o campo de progresso (BFS a partir da largada).
+        # Esse mapa atribui a cada célula sua distância em passos até a largada,
+        # e é a base do reward shaping: o agente é recompensado por ALCANÇAR
+        # células de distância maior do que já viu antes.
         self.campo_progresso = calcular_campo_progresso(self.grid, self.celula_largada)
-        self.progresso_max = self.campo_progresso.max()
+        self.progresso_max = self.campo_progresso.max()  # progresso máximo possível na pista
+
+        # Limite de passos por episódio: evita que um agente ruim fique girando
+        # em círculos para sempre. Quando atingido, o episódio é "truncado".
         self.max_steps = max_steps
+
+        # Gerador de aleatoriedade local (não usa o estado global do numpy).
+        # Permite reproduzir resultados ao passar o mesmo `seed`.
         self.rng = np.random.default_rng(seed)
+
+        # Estado físico do carro — só fica definido após chamar reset().
         self.carro: Optional[EstadoCarro] = None
+
+        # Contadores resetados a cada episódio.
         self.passos = 0
         self.melhor_progresso_atingido = 0
 
     def reset(self) -> np.ndarray:
+        """Inicia um novo episódio. Deve ser chamado ANTES do primeiro step()."""
         sy, sx = self.celula_largada
-        # Posiciona o carro no centro da célula de largada
+        # Posiciona o carro no centro da célula de largada (+0.5 para evitar
+        # ambiguidade na fronteira entre células). Começa parado (v=0) e
+        # apontando para o leste (theta=0).
         self.carro = EstadoCarro(x=sx + 0.5, y=sy + 0.5, theta=0.0, v=0.0)
         self.passos = 0
         self.melhor_progresso_atingido = 0
         return self._observar()
 
     def _observar(self) -> np.ndarray:
+        """
+        Constrói o vetor de observação que o agente recebe.
+
+        O agente NÃO vê sua posição (x,y) nem sua orientação theta diretamente —
+        só os sensores LIDAR (5 raios) e a velocidade. Isso força a política a
+        depender de features locais (o que está à minha frente?), tornando o
+        aprendizado mais transferível entre pistas.
+        """
         c = self.carro
+        # Lança 5 raios nas direções configuradas em ANGULOS_RAIOS, sempre
+        # relativos ao ângulo atual do carro (theta + offset).
         raios = [lancar_raio(self.grid, c.x, c.y, c.theta + a) for a in ANGULOS_RAIOS]
+        # Normaliza para [0, 1] dividindo pelo alcance máximo do sensor.
+        # Estados normalizados ajudam tanto algoritmos tabulares (discretização
+        # mais uniforme) quanto métodos baseados em função de aproximação.
         raios_norm = [r / DIST_MAX_RAIO for r in raios]
         v_norm = c.v / V_MAX
         return np.array(raios_norm + [v_norm], dtype=np.float32)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, dict]:
+        """
+        Executa UMA ação no ambiente e retorna a tupla padrão de RL:
+            obs        — nova observação (vetor de 6 floats)
+            reward     — recompensa recebida neste passo
+            terminated — True se o episódio acabou por chegada ou colisão
+            truncated  — True se atingiu o limite de passos (max_steps)
+            info       — dicionário com metadados ({"chegada": True}, {"colisao": True} ou {})
+        """
         assert self.carro is not None, "Chame reset() antes de step()"
         assert 0 <= action <= 4
         c = self.carro
 
-        # Atualiza física baseada na ação
+        # --- 1. Atualiza variáveis físicas do carro conforme a ação ---
+        # Note que a velocidade é "trancada" em [0, V_MAX] — o carro não anda
+        # para trás. Virar não muda velocidade; acelerar/frear não muda theta.
         if action == 1:    # acelerar
             c.v = min(c.v + V_DELTA, V_MAX)
         elif action == 2:  # frear
@@ -152,9 +203,13 @@ class AmbienteCarro:
             c.theta -= THETA_DELTA
         elif action == 4:  # virar à direita
             c.theta += THETA_DELTA
-        # action == 0: nada
+        # action == 0: nada — mantém v e theta, mas o carro continua se movendo
+        # pela inércia (próximo bloco usa v atual para deslocar a posição).
 
-        # Move o carro
+        # --- 2. Calcula a posição alvo a partir da física simples ---
+        # Cinemática 2D: dx = v·cos(θ), dy = v·sin(θ).
+        # Importante: NÃO atualiza c.x/c.y ainda — primeiro precisamos checar
+        # se a nova posição é válida (não colide com parede).
         novo_x = c.x + c.v * math.cos(c.theta)
         novo_y = c.y + c.v * math.sin(c.theta)
 
@@ -163,7 +218,10 @@ class AmbienteCarro:
         truncated = False
         info = {}
 
-        # Checa colisão (a posição alvo cai numa célula de parede ou fora do grid)
+        # --- 3. Verifica colisão na posição alvo ---
+        # Trunca floats para inteiros para descobrir em qual célula caiu.
+        # Colisão acontece se sair do grid OU cair em uma célula de PAREDE.
+        # Nota: não há "deslizamento" — bateu, acabou (terminated=True).
         ix, iy = int(novo_x), int(novo_y)
         h, w = self.grid.shape
         fora_dos_limites = (iy < 0 or iy >= h or ix < 0 or ix >= w)
@@ -171,27 +229,38 @@ class AmbienteCarro:
             reward = R_COLISAO
             terminated = True
             info["colisao"] = True
+            # Retorno antecipado: não atualiza c.x/c.y (o carro "morreu" antes de chegar lá).
             return self._observar(), reward, terminated, truncated, info
 
-        # Movimento aceito
+        # --- 4. Movimento aceito: confirma a nova posição ---
         c.x = novo_x
         c.y = novo_y
 
-        # Reward shaping baseado em progresso
+        # --- 5. Reward shaping baseado em progresso ---
+        # `progresso_celula` é a distância (em passos de BFS) da célula atual
+        # até a largada. Quanto maior, mais perto do "fim natural" da pista.
         progresso_celula = self.campo_progresso[iy, ix]
-        # Recompensa por ter ATINGIDO uma célula com progresso maior que o melhor anterior
+        # Recompensa SOMENTE pelo progresso NOVO — diferença entre o progresso
+        # da célula atual e o melhor já atingido no episódio. Assim, andar para
+        # trás ou ficar girando em círculos não gera recompensa (max(0, ...)).
+        # Esse design evita que o agente exploit "ir-e-voltar" por reward shaping.
         delta_progresso = max(0, progresso_celula - self.melhor_progresso_atingido)
         self.melhor_progresso_atingido = max(self.melhor_progresso_atingido, progresso_celula)
 
+        # Reward total do passo = custo de tempo + bônus de progresso.
+        # R_TEMPO < 0 incentiva o agente a terminar o episódio rápido.
         reward = R_TEMPO + float(delta_progresso)
 
-        # Chegada
+        # --- 6. Verifica se chegou à linha de chegada ---
         if self.grid[iy, ix] == CHEGADA:
-            reward += R_CHEGADA
+            reward += R_CHEGADA  # bônus grande (+500) por completar a pista
             terminated = True
             info["chegada"] = True
 
-        # Limite de passos
+        # --- 7. Verifica limite de passos (truncamento, não terminação) ---
+        # Diferença sutil mas importante em RL: `truncated` significa que o
+        # episódio acabou por limite externo, não porque o ambiente "concluiu".
+        # Algoritmos como Q-Learning tratam os dois casos diferente no bootstrap.
         if self.passos >= self.max_steps:
             truncated = True
 
@@ -199,7 +268,7 @@ class AmbienteCarro:
 
     @property
     def obs_dim(self) -> int:
-        """Dimensão do vetor de observação."""
+        """Dimensão do vetor de observação (5 raios LIDAR + 1 velocidade = 6)."""
         return N_RAIOS + 1
 
     @property

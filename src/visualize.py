@@ -2,9 +2,7 @@
 Visualização do carrinho de corrida.
 
 Funções principais:
-    plotar_pista(grid, ax=None) — desenha a pista estática (matplotlib, para relatório)
     renderizar_episodio(env, agente_fn, ...) — animação no terminal
-    plotar_campo_progresso(env, save_path) — PNG do campo BFS (matplotlib)
 
 A animação é renderizada diretamente no terminal usando códigos ANSI para
 limpar a tela entre frames. Funciona em qualquer terminal moderno (macOS,
@@ -18,12 +16,9 @@ Uso típico:
 from __future__ import annotations
 import math
 import time
-from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 from track import PAREDE, ASFALTO, LARGADA, CHEGADA
 from env import AmbienteCarro, ANGULOS_RAIOS
@@ -39,12 +34,6 @@ EMOJI_RASTRO = "🟦"   # célula já percorrida pelo carro
 # Carro: símbolo escolhido conforme o ângulo (8 direções)
 SIMBOLOS_CARRO = ["➡️", "↘️", "⬇️", "↙️", "⬅️", "↖️", "⬆️", "↗️"]
 
-# Cores para o plot estático (matplotlib)
-COR_PAREDE = "#2c3e50"
-COR_ASFALTO = "#ecf0f1"
-COR_LARGADA = "#27ae60"
-COR_CHEGADA = "#e74c3c"
-
 
 # === Auxiliar: limpa a tela do terminal e move cursor para o topo ===
 def _limpar_terminal():
@@ -57,57 +46,6 @@ def _simbolo_carro(theta: float) -> str:
     theta_norm = (theta + math.pi / 8) % (2 * math.pi)
     setor = int(theta_norm / (math.pi / 4)) % 8
     return SIMBOLOS_CARRO[setor]
-
-
-# === Plot estático da pista (matplotlib) ===
-def plotar_pista(grid: np.ndarray, ax: Optional[plt.Axes] = None) -> plt.Axes:
-    """Desenha a pista estática como um conjunto de retângulos coloridos."""
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(10, 7))
-
-    h, w = grid.shape
-    mapa_cores = {
-        PAREDE: COR_PAREDE,
-        ASFALTO: COR_ASFALTO,
-        LARGADA: COR_LARGADA,
-        CHEGADA: COR_CHEGADA,
-    }
-
-    for y in range(h):
-        for x in range(w):
-            cor = mapa_cores[grid[y, x]]
-            ret = patches.Rectangle(
-                (x, y), 1, 1, facecolor=cor, edgecolor="white", linewidth=0.5
-            )
-            ax.add_patch(ret)
-
-    ax.set_xlim(0, w)
-    ax.set_ylim(h, 0)
-    ax.set_aspect("equal")
-    ax.set_xticks([])
-    ax.set_yticks([])
-    return ax
-
-
-def plotar_campo_progresso(env: AmbienteCarro, save_path: Optional[str] = None):
-    """Plota o campo de progresso (resultado do BFS) para visualizar o reward shaping."""
-    fig, ax = plt.subplots(figsize=(10, 7))
-    plotar_pista(env.grid, ax=ax)
-
-    h, w = env.grid.shape
-    for y in range(h):
-        for x in range(w):
-            if env.campo_progresso[y, x] >= 0:
-                ax.text(
-                    x + 0.5, y + 0.5, str(env.campo_progresso[y, x]),
-                    ha="center", va="center", fontsize=8,
-                    color="black", weight="bold",
-                )
-    ax.set_title("Campo de progresso (BFS a partir da largada)")
-    if save_path:
-        plt.savefig(save_path, dpi=120, bbox_inches="tight")
-        print(f"Salvo em {save_path}")
-    plt.close(fig)
 
 
 # === Animação no terminal ===
@@ -239,6 +177,3 @@ if __name__ == "__main__":
         return 1 if contador[0] <= 3 else 0
 
     reward_total, n_passos, info = renderizar_episodio(env, agente_trivial, fps=4)
-
-    # Bônus: gerar PNG do campo de progresso
-    plotar_campo_progresso(env, save_path="/tmp/progresso.png")
