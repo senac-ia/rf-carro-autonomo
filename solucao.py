@@ -4,11 +4,15 @@ Esqueleto da sua solução para o EP do carrinho (versão tabular).
 Você deve implementar:
     - AgenteQLearning  (tabular)
 
-E preencher main() para orquestrar treinamento, avaliação e geração dos arquivos
-de saída descritos no README (q_learning.txt).
+E preencher main() para orquestrar:
+    1. Treinamento round-robin nas pistas 01-16 → salva treinamento/q_learning.pkl.
+    2. Avaliação gulosa (ε = 0) nas pistas de holdout 17 e 18 → gera
+       q_learning_pista_17.txt e q_learning_pista_18.txt (formato do README §3.3).
 
 Uso:
-    python solucao.py pistas/pista_03.txt
+    python solucao.py                         # treina (se necessário) + avalia em 17 e 18
+    python solucao.py --recarregar            # força re-treino (ignora pickle existente)
+    python solucao.py --avaliar pistas/X.txt  # apenas avalia o modelo salvo em X
 
 Termos como `step`, `reset`, `obs`, `action`, `reward` são mantidos em inglês
 por serem o vocabulário canônico de Aprendizado por Reforço (Sutton & Barto).
@@ -34,9 +38,13 @@ SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 
-# Diretório onde os modelos treinados serão salvos via pickle (ver enunciado/anexo_b_pickle.md)
+# Diretório onde o modelo treinado será salvo via pickle (ver enunciado/anexo_b_pickle.md)
 DIR_TREINAMENTO = Path("treinamento")
 DIR_TREINAMENTO.mkdir(exist_ok=True)
+
+# Conjuntos de pistas
+PISTAS_TREINO = [f"pistas/pista_{i:02d}.txt" for i in range(1, 17)]   # 01..16
+PISTAS_HOLDOUT = [f"pistas/pista_{i:02d}.txt" for i in range(17, 19)] # 17, 18
 
 
 # ============================================================================
@@ -83,20 +91,36 @@ class AgenteQLearning:
 
 
 # ============================================================================
-# LOOP DE TREINAMENTO
+# LOOP DE TREINAMENTO (round-robin nas 16 pistas de treino)
 # ============================================================================
 
-def treinar(env, agente, n_episodios, decaimento_eps_episodios, verbose=True):
+def treinar_round_robin(pistas_treino, agente, n_episodios_por_pista,
+                       max_passos, decaimento_eps_episodios, verbose=True):
     """
-    Loop de treinamento. O agente decide o que fazer em cada passo via
-    escolher_acao() e atualizar().
-    """
-    historico_recompensas = []
-    historico_sucessos = []
+    Loop de treinamento em round-robin: a cada episódio, sorteia uma pista
+    do conjunto de treino e roda UM episódio nela.
 
-    for ep in range(n_episodios):
+    Total de episódios = n_episodios_por_pista * len(pistas_treino).
+    Com 16 pistas e 30k por pista, são 480k episódios no total.
+    """
+    historico_recompensas = []          # uma entrada por episódio (todas as pistas)
+    historico_sucessos = []
+    rewards_por_pista = {p: [] for p in pistas_treino}
+
+    n_total = n_episodios_por_pista * len(pistas_treino)
+
+    # Cache de ambientes — recriar AmbienteCarro a cada episódio é caro porque
+    # o BFS do campo de progresso é recalculado. Mantenha um dict pista→env.
+    envs = {p: AmbienteCarro(p, max_steps=max_passos, seed=SEED) for p in pistas_treino}
+
+    for ep in range(n_total):
         # TODO: schedule do epsilon (linear de eps_inicial a eps_final em
         #       decaimento_eps_episodios episódios).
+
+        # TODO: sortear uma pista
+        # pista = random.choice(pistas_treino)
+        # env = envs[pista]
+
         # TODO: loop do episódio:
         #   obs = env.reset()
         #   while not done:
@@ -104,10 +128,12 @@ def treinar(env, agente, n_episodios, decaimento_eps_episodios, verbose=True):
         #       obs_prox, reward, term, trunc, info = env.step(action)
         #       agente.atualizar(obs, action, reward, obs_prox, term)
         #       obs = obs_prox
+
         # TODO: registrar reward total e flag de sucesso (info.get("chegada"))
+        #       em historico_recompensas, historico_sucessos e rewards_por_pista[pista]
         pass
 
-    return historico_recompensas, historico_sucessos
+    return historico_recompensas, historico_sucessos, rewards_por_pista
 
 
 # ============================================================================
@@ -151,16 +177,18 @@ def treinar_ou_carregar(nome, fn_treinar, recarregar=False):
 # GERAÇÃO DOS ARQUIVOS DE SAÍDA
 # ============================================================================
 
-def escrever_saida(caminho, nome_algoritmo, env, resultado_avaliacao, n_episodios_treinados, K):
+def escrever_saida(caminho, nome_algoritmo, pista, resultado_avaliacao, n_episodios_treinados, K):
     """
-    Escreve um arquivo no formato esperado pelo README (§3.3):
+    Escreve um arquivo no formato esperado pelo README §3.3:
 
     === Pista: <nome> ===
-    Algoritmo: <nome>
-    Episódios de treinamento: N
+    Algoritmo: Q-Learning (round-robin em pistas 01-16)
+    Episódios totais de treinamento: N
     Discretização: K=<k>
+    Estados populados: N
     Tempo de chegada (passos): N
     Velocidade média: V
+    Velocidade máxima atingida: V
     Recompensa total: R
     Sucesso: SIM/NAO
     """
@@ -174,24 +202,49 @@ def escrever_saida(caminho, nome_algoritmo, env, resultado_avaliacao, n_episodio
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("pista", help="Caminho para arquivo de pista (treino principal)")
-    parser.add_argument("--episodios", type=int, default=30_000)
+    parser.add_argument("--episodios-por-pista", type=int, default=30_000,
+                        help="Episódios de treino por pista no round-robin (default: 30000)")
     parser.add_argument("--max-passos", type=int, default=500)
-    parser.add_argument("--K", type=int, default=5, help="Baldes da discretização (fixo em 5; ver README §2.2)")
+    parser.add_argument("--K", type=int, default=5,
+                        help="Baldes da discretização (fixo em 5; ver README §2.2)")
+    parser.add_argument("--recarregar", action="store_true",
+                        help="Força re-treino mesmo se o pickle existir")
+    parser.add_argument("--avaliar", type=str, default=None,
+                        help="Apenas avalia o modelo salvo na pista especificada (pula treino)")
     args = parser.parse_args()
 
-    print(f"Carregando pista: {args.pista}")
-    env = AmbienteCarro(args.pista, max_steps=args.max_passos, seed=SEED)
-    print(f"  obs_dim = {env.obs_dim}, n_actions = {env.n_actions}")
+    # ─── Treinamento round-robin (ou carregamento) ────────────────────────
+    # def fn_treinar():
+    #     agente = AgenteQLearning(obs_dim=6, n_actions=5, K=args.K)
+    #     n_total = args.episodios_por_pista * len(PISTAS_TREINO)
+    #     rewards, sucessos, rewards_por_pista = treinar_round_robin(
+    #         PISTAS_TREINO, agente, args.episodios_por_pista, args.max_passos,
+    #         decaimento_eps_episodios=int(0.8 * n_total),
+    #     )
+    #     return {
+    #         "q_table": agente.Q,
+    #         "discretization_K": args.K,
+    #         "n_episodes_trained": n_total,
+    #         "rewards_history": rewards,
+    #         "rewards_por_pista": rewards_por_pista,
+    #         "config": {"alpha": agente.alpha, "gamma": agente.gamma},
+    #         "seed": SEED,
+    #         "tracks_used": PISTAS_TREINO,
+    #     }
+    #
+    # modelo = treinar_ou_carregar("q_learning", fn_treinar, recarregar=args.recarregar)
 
-    # ─── Q-Learning Tabular ────────────────────────────────────────────────
-    print("\n=== Q-Learning Tabular ===")
-    # agente = AgenteQLearning(env.obs_dim, env.n_actions, K=args.K)
-    # rewards, sucessos = treinar(env, agente, args.episodios,
-    #                             decaimento_eps_episodios=int(0.8 * args.episodios))
-    # resultado = avaliar(env, agente)
-    # escrever_saida("q_learning.txt", "Q-Learning", env, resultado,
-    #                args.episodios, args.K)
+    # ─── Avaliação ─────────────────────────────────────────────────────────
+    # Reconstrói o agente a partir do pickle (apenas Q-table + K — sem treinar mais).
+    # agente_avaliacao = AgenteQLearning.from_modelo(modelo)
+    #
+    # pistas_avaliar = [args.avaliar] if args.avaliar else PISTAS_HOLDOUT
+    # for pista in pistas_avaliar:
+    #     env = AmbienteCarro(pista, max_steps=args.max_passos, seed=SEED)
+    #     resultado = avaliar(env, agente_avaliacao)
+    #     nome_pista = Path(pista).stem  # "pista_17"
+    #     escrever_saida(f"q_learning_{nome_pista}.txt", "Q-Learning",
+    #                    pista, resultado, modelo["n_episodes_trained"], args.K)
 
     print("\nPronto.")
 

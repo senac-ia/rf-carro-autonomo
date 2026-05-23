@@ -199,65 +199,88 @@ Essa tupla é o índice em `Q`. `Q[chave]` é um `np.ndarray` de 5 elementos (um
 
 Antes de começar, leia [`enunciado/qlearning.md`](enunciado/qlearning.md) — explica a matemática do Q-Learning (atualização TD, $\varepsilon$-greedy, por que é off-policy), traz o pseudocódigo e dicas de implementação em Python com a estrutura de dados sugerida para a tabela $Q$.
 
-### 3.1 Q-Learning Baseline
+### 3.1 Q-Learning treinado em múltiplas pistas, avaliado em holdout
 
-Implemente Q-Learning com $\varepsilon$-greedy. Treine na pista `pista_03.txt` (curva moderada).
+A tarefa central deste EP é treinar **um único agente** capaz de generalizar para pistas que ele **nunca viu durante o treino**. O esquema:
 
-Ao final, **avalie a política aprendida** com $\varepsilon = 0$ (gulosa) e gere `q_learning.txt`.
+- **Conjunto de treino:** pistas **01 a 16** (16 pistas — todas as fáceis e médias, mais 4 difíceis).
+- **Conjunto de teste (holdout):** pistas **17 e 18** — **não usar durante o treinamento**.
 
-Analise e reporte no relatório:
+#### Esquema de treinamento: *round-robin*
 
-- **Histórico de aprendizado** (recompensa média por episódio em janela móvel de 100, salvo no pickle e reportado no relatório como tabela com marcos ou ASCII).
-- **Recompensa média durante o treinamento** (com $\varepsilon$-greedy ativo) vs. **recompensa final em avaliação gulosa** ($\varepsilon = 0$).
-- **Velocidade média** da política aprendida.
-- **Trajetória visual** — use a animação no terminal (`renderizar_episodio` em `src/visualize.py`) para inspecionar a política final. O agente passa colado nas paredes ou mantém folga? Descreva o que observou (capturar o terminal em texto ou descrever em prosa basta).
+A cada episódio, sorteie uma pista do conjunto de treino e treine um episódio nela. Isso evita **catastrophic forgetting** — se você treinasse sequencialmente (30k em pista_01, depois 30k em pista_02, ...), o agente desaprenderia as primeiras ao chegar nas últimas.
+
+```python
+import random
+pistas_treino = [f"pistas/pista_{i:02d}.txt" for i in range(1, 17)]  # 01..16
+for episodio in range(n_episodios_total):
+    pista = random.choice(pistas_treino)
+    env = AmbienteCarro(pista, ...)  # ou recarregue a pista no mesmo env
+    rodar_um_episodio(env, agente)
+```
+
+#### Salvamento
+
+Ao fim do treinamento, salve **um único pickle**: `treinamento/q_learning.pkl`. Esse arquivo contém a tabela $Q$ final (compartilhada entre todas as pistas — afinal, a representação de estado é local via LIDAR) e os metadados do treinamento.
+
+#### Avaliação
+
+Para gerar os arquivos de saída, **carregue o pickle** e rode com $\varepsilon = 0$ (gulosa) nas duas pistas de holdout. Gere:
+
+- `q_learning_pista_17.txt`
+- `q_learning_pista_18.txt`
+
+A política nunca viu essas pistas — o desempenho ali mede **generalização**, não memorização.
 
 ### 3.2 Hiperparâmetros sugeridos
 
 | Hiperparâmetro | Valor |
 |---|---|
-| Episódios de treinamento | 30.000 |
+| Episódios por pista (round-robin) | 30.000 |
+| Total de episódios no treino | **480.000** (= 30 mil × 16) |
 | Limite de passos por episódio | 500 |
 | Taxa de aprendizado $\alpha$ | 0,1 |
 | Desconto $\gamma$ | 0,99 |
 | Exploração $\varepsilon$ | decai linearmente de 1,0 a 0,05 nos primeiros 80% dos episódios |
 
+> **Tempo esperado:** 30-60 minutos em CPU comum. Salve o pickle ao terminar — você não vai querer re-treinar a cada execução.
+
 Use estes valores como ponto de partida; justifique no relatório qualquer desvio.
 
-### 3.3 Formato do arquivo de saída
+### 3.3 Formato dos arquivos de saída
 
-O programa gera `q_learning.txt` na raiz do projeto, com o desempenho da política treinada em `pista_03.txt`.
+Para **cada pista de holdout** (pista_17 e pista_18), gere um arquivo na raiz do projeto com as métricas da avaliação gulosa:
 
-Template:
+`q_learning_pista_17.txt` e `q_learning_pista_18.txt`, ambos no template:
 
 ```
-=== Pista: pista_03.txt ===
-Algoritmo: Q-Learning
-Episódios de treinamento: 30000
+=== Pista: pista_17.txt ===
+Algoritmo: Q-Learning (round-robin em pistas 01-16)
+Episódios totais de treinamento: 480000
 Discretização: K=5
-Estados populados: 1247
-Tempo de chegada (passos): 27
-Velocidade média: 1.42
+Estados populados: 8742
+Tempo de chegada (passos): 47
+Velocidade média: 1.31
 Velocidade máxima atingida: 2.0
-Recompensa total: 478.4
+Recompensa total: 412.7
 Sucesso: SIM
 ```
+
+(Se o agente não chega ao fim, `Sucesso: NAO` e os campos de tempo/recompensa refletem o episódio truncado ou colidido.)
 
 ---
 
 ## 4. Relatório
 
-O relatório (no `README.md` do seu repositório) deve cobrir:
+O relatório deve ser entregue em **`docs/`** do seu repositório (`docs/relatorio.md` ou similar), focado nas pistas de **holdout (17 e 18)** — afinal, é nelas que o agente é de fato testado.
 
-### Modelagem do MDP e Q-Learning Baseline
+O conteúdo específico do relatório será detalhado adiante. Em linhas gerais, deve cobrir:
 
-- **Espaço de estados (após discretização $K = 5$):** quantos estados, em teoria? E na prática (após o treinamento)?
-- **Espaço de ações:** justifique se 5 ações são suficientes.
-- **Função de recompensa:** explique como você implementou o reward shaping.
-- **Como você está armazenando $Q[s,a]$ internamente** (dicionário, array NumPy multidimensional)?
-- **Resultado do baseline:** quantos passos o Q-Learning leva para completar a pista? Velocidade média atingida? Perfil de uso de cada ação?
-- **Curva de aprendizado:** evolução da recompensa média por episódio em janela móvel de 100.
-- **Inspeção qualitativa via animação no terminal** (`renderizar_episodio` em `src/visualize.py`): o agente passa colado nas paredes ou mantém folga? Como isso se relaciona com o comportamento off-policy do Q-Learning?
+- Modelagem do MDP (estados, ações, recompensas).
+- Implementação do Q-Learning (estrutura da tabela $Q$, discretização, $\varepsilon$-schedule).
+- Esquema de treinamento round-robin nas 16 pistas (curva de aprendizado, número de estados populados).
+- **Resultado nas pistas de holdout 17 e 18** — quão bem o agente generaliza? Há diferença grande entre treino e teste?
+- Inspeção qualitativa via animação no terminal (`renderizar_episodio` em `src/visualize.py`).
 
 ---
 
@@ -283,15 +306,16 @@ rf-carro-autonomo/
 │   ├── anexo_a_lidar.md     ← sensores LIDAR (real e simulado)
 │   ├── anexo_b_pickle.md    ← salvamento de modelos com pickle
 │   └── anexo_c_velocidade.md ← velocidade como variável crítica
-├── docs/                    ← (criado por você) materiais da sua entrega
+├── docs/                    ← (criado por você) relatório e materiais da entrega
 ├── src/
 │   ├── track.py             ← parser de pistas em emojis
 │   ├── env.py               ← AmbienteCarro (física + LIDAR + recompensas)
 │   └── visualize.py         ← animação do agente no terminal
-├── pistas/
-│   ├── pista_01.txt … pista_04.txt   ← 4 FÁCEIS (progressão pedagógica)
-│   ├── pista_05.txt … pista_12.txt   ← 8 MÉDIAS (combinam vários elementos)
-│   └── pista_13.txt … pista_18.txt   ← 6 DIFÍCEIS (corredor até 2 células)
+├── pistas/                  ← 18 pistas
+│   ├── pista_01.txt … pista_04.txt   ← 4 FÁCEIS (progressão pedagógica)        — TREINO
+│   ├── pista_05.txt … pista_12.txt   ← 8 MÉDIAS (combinam vários elementos)    — TREINO
+│   ├── pista_13.txt … pista_16.txt   ← 4 DIFÍCEIS                              — TREINO
+│   └── pista_17.txt, pista_18.txt    ← 2 DIFÍCEIS                              — HOLDOUT (avaliação)
 └── tests/
     └── validar_pistas.py    ← valida largada → chegada em todas as pistas
 ```
@@ -337,7 +361,12 @@ while not done:
 
 ### 5.5 Esqueleto da implementação
 
-Veja `solucao.py` — placeholder de `AgenteQLearning` e função `main()` que orquestra a I/O esperada (`q_learning.txt`).
+Veja `solucao.py` — placeholder de `AgenteQLearning` e função `main()` que orquestra:
+
+1. **Treinamento** (round-robin nas pistas 01-16) → salva `treinamento/q_learning.pkl`.
+2. **Avaliação** (gulosa nas pistas 17 e 18) → gera `q_learning_pista_17.txt` e `q_learning_pista_18.txt`.
+
+Se o pickle já existe, o treino é pulado e o agente é carregado direto para avaliação. Para forçar re-treinamento, delete o `.pkl` ou passe `--recarregar`.
 
 ### 5.6 Visualização
 
@@ -356,18 +385,18 @@ reward_total, n_passos, info = renderizar_episodio(env, politica, fps=8)
 
 O carro é representado por uma seta direcional (➡️ ⬇️ ⬅️ ⬆️ etc.) que muda conforme o ângulo. As células já percorridas ficam azuis (🟦), facilitando ver a trajetória.
 
-### 5.7 Salvamento de modelos
+### 5.7 Salvamento do modelo
 
-Treinar 30.000 episódios pode demorar minutos. Para evitar re-treinar a cada execução, salve a tabela $Q$ via `pickle` em `/treinamento/`. O `solucao.py` já tem `treinar_ou_carregar()` pronta.
+Treinar 480 mil episódios pode demorar 30-60 minutos. Para evitar re-treinar a cada execução, salve a tabela $Q$ via `pickle` em `/treinamento/`. O `solucao.py` já tem `treinar_ou_carregar()` pronta.
 
 Estrutura esperada:
 
 ```
 treinamento/
-└── q_learning_K5_pista_03.pkl
+└── q_learning.pkl    ← único arquivo, contém o modelo treinado em pistas 01-16
 ```
 
-O `.pkl` deve guardar pelo menos: tabela Q, $K$ usado, nº de episódios, hiperparâmetros, seed, pista usada e histórico de recompensas (em janela móvel de 100). Esse arquivo deve ser commitado no repositório — assim o professor reproduz a avaliação sem re-treinar.
+O `.pkl` deve guardar pelo menos: tabela $Q$, $K$ usado, nº total de episódios, hiperparâmetros, seed, **lista das pistas usadas no treino** e histórico de recompensas (em janela móvel de 100). Esse arquivo deve ser commitado no repositório — assim o professor reproduz a avaliação sem re-treinar.
 
 Detalhes em [`enunciado/anexo_b_pickle.md`](enunciado/anexo_b_pickle.md).
 
@@ -388,10 +417,10 @@ Mudar esses valores muda o problema. Justifique no relatório.
 
 Para você ter referência sobre o que esperar:
 
-- **Pistas 01–04 (fáceis):** Q-Learning tabular converge rápido (poucos milhares de episódios).
-- **Pista 03 (curva suave):** o baseline — pode precisar 20.000–30.000 episódios com $K=5$ para uma boa política.
-- **Pistas 05–12 (médias):** combinam mais elementos, exigem políticas mais sofisticadas.
-- **Pistas 13–18 (difíceis):** corredor mínimo de 2 células com várias mudanças de direção — podem ser muito difíceis ou impossíveis para tabular. Use para discussão crítica no relatório.
+- **Treino (01-16):** com 30k episódios por pista (round-robin, 480k total), o agente costuma convergir bem em 01-12. Nas pistas 13-16 (difíceis, corredor 2-3 células) o aprendizado é parcial — espere taxas de sucesso menores ali mesmo no conjunto de treino.
+- **Holdout (17-18):** o LIDAR é local, então padrões aprendidos em uma pista (ex.: "parede frontal próxima + corredor abre à direita → vire") transferem para outras com geometria parecida. **Generalização razoável é esperada**, mas com queda em relação ao treino — quanto, é o que o relatório deve quantificar.
+- **Se o agente colidir muito em 17-18 mas bem no treino:** sinal claro de overfitting à geometria específica das pistas de treino. Discussão importante para o relatório.
+- **Curva de aprendizado plana em $-100$:** o agente nunca chega ao fim e sempre colide. Aumente `max_steps`, ajuste o schedule de $\varepsilon$, ou aumente o budget de episódios.
 
 A calibração final dos hiperparâmetros é parte do EP — você vai precisar experimentar.
 

@@ -20,11 +20,18 @@ Pode ser baseado no starter code fornecido em https://github.com/senac-ia/rf-car
 - 18 pistas (`pistas/pista_01.txt` a `pistas/pista_18.txt`)
 - Esqueleto de `solucao.py` para preencher
 
-## Salvamento de modelos treinados
+## Treino e holdout
 
-Como os tempos de treinamento podem ser longos (30.000 episódios em pistas mais complexas leva vários minutos), você **deve salvar os modelos treinados em disco**, no diretório `/treinamento` na raiz do projeto. Use `pickle` da biblioteca padrão do Python (ver [`anexo_b_pickle.md`](anexo_b_pickle.md)).
+- **Treino:** pistas **01 a 16** (round-robin — a cada episódio, sorteia-se uma pista do conjunto).
+- **Holdout (avaliação):** pistas **17 e 18** — **proibido usar durante o treinamento**.
 
-Estrutura esperada na raiz do projeto:
+O EP avalia a capacidade do agente de **generalizar** para pistas não vistas; treinar nas pistas de holdout é considerado *data leakage* e descaracteriza o EP.
+
+## Salvamento do modelo treinado
+
+Como o treinamento (480 mil episódios) pode demorar 30-60 minutos em CPU, você **deve salvar o modelo treinado em disco**. Use `pickle` (ver [`anexo_b_pickle.md`](anexo_b_pickle.md)).
+
+Salve **um único arquivo**, em `/treinamento/q_learning.pkl`:
 
 ```
 seu-projeto/
@@ -32,11 +39,16 @@ seu-projeto/
 ├── solucao.py
 ├── src/
 ├── pistas/
+├── docs/                      ← seu relatório vai aqui
 └── treinamento/
-    └── q_learning_K5_pista_03.pkl  ← Q-Learning treinado em pista_03
+    └── q_learning.pkl         ← Q-Learning treinado em round-robin nas 16 pistas
 ```
 
 Esse arquivo deve ser **commitado no repositório**. Isso permite ao professor reproduzir a avaliação sem re-treinar.
+
+## Relatório
+
+O relatório vai em **`docs/`** do seu repositório (sugestão de nome: `docs/relatorio.md`). O conteúdo específico será detalhado adiante; em linhas gerais, foca nas pistas de **holdout (17 e 18)** — afinal, é nelas que o agente é de fato testado.
 
 ## O que será avaliado
 
@@ -48,6 +60,8 @@ Esse arquivo deve ser **commitado no repositório**. Isso permite ao professor r
 - **Espaço de ações:** como as 5 ações foram codificadas?
 - **Função de recompensa:** como o reward shaping foi implementado? Você experimentou variações?
 - **Política de exploração:** schedule de $\varepsilon$, justificativa.
+- **Estratégia de treinamento round-robin:** como você seleciona pistas a cada episódio? Como compensa pistas mais difíceis?
+- **Generalização:** desempenho do agente em pista_17 e pista_18 (holdout). Há queda em relação ao treino? Como interpretar?
 
 > **Atenção:** fazer cópia do algoritmo apenas e explicar o que é o conceito **não vale**. O trabalho requer a explicação de como o conceito foi **modelado e implementado para este problema específico** (pilotar um carrinho).
 
@@ -55,19 +69,19 @@ Esse arquivo deve ser **commitado no repositório**. Isso permite ao professor r
 
 - **Implementação do Q-Learning** do zero.
 - **Função de discretização** com $K = 5$.
-- **Loop de treinamento** que registra histórico de recompensas por episódio (salvo no pickle do modelo).
-- **Loop de avaliação** com $\varepsilon = 0$ que gera o arquivo de saída `q_learning.txt`.
-- **Inspeção da política final** via animação no terminal (`renderizar_episodio` em `src/visualize.py`) — descreva no relatório o que observou para a política treinada em cada pista.
-- **Salvamento e carregamento** dos modelos via pickle no diretório `/treinamento`.
+- **Loop de treinamento round-robin** nas pistas 01-16, que registra histórico de recompensas por episódio (salvo no pickle do modelo).
+- **Loop de avaliação** com $\varepsilon = 0$ nas pistas de holdout (17 e 18), que gera `q_learning_pista_17.txt` e `q_learning_pista_18.txt`.
+- **Inspeção da política final** via animação no terminal (`renderizar_episodio` em `src/visualize.py`) nas pistas de holdout — descreva no relatório o que observou.
+- **Salvamento e carregamento** do modelo via pickle único em `/treinamento/q_learning.pkl`.
 
 ### Critérios de avaliação
 
 - Explicação da lógica do problema e da modelagem do MDP.
 - Explicação da discretização adotada (por que $K = 5$ funciona bem aqui).
 - Explicação das funções principais e estrutura do código.
-- Demonstração dos resultados (histórico de aprendizado em formato textual, animação do agente no terminal, tabelas de avaliação).
-- **Análise crítica** do comportamento do Q-Learning na pista (curva de aprendizado, política aprendida, trajetória observada).
-- Criatividade — extensões além do mínimo, exploração de variações na função de recompensa ou em outras pistas.
+- Demonstração dos resultados (curva de aprendizado em formato textual, animação do agente no terminal, métricas nas pistas de holdout).
+- **Análise crítica de generalização:** o que a diferença treino-vs-holdout revela sobre a representação de estado (LIDAR local) e a capacidade do Q-Learning tabular?
+- Criatividade — extensões além do mínimo, exploração de variações na função de recompensa, na política de seleção de pista no round-robin, etc.
 
 ## Política de uso de ferramentas
 

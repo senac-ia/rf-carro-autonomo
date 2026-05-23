@@ -39,21 +39,28 @@ Pronto. Não há mais nada de fundamental.
 
 ## B.3 O que salvar para o Q-Learning
 
-Salve um dicionário com tudo que você precisa para reproduzir o agente:
+Salve um dicionário com tudo que você precisa para reproduzir o agente. Como o EP usa **um único modelo treinado em round-robin** nas 16 pistas de treino, **o pickle também é único** (`treinamento/q_learning.pkl`):
 
 ```python
 estado_para_salvar = {
     "q_table": agent.q_table,           # dict {chave_discreta: array} ou np.ndarray
     "discretization_K": 5,              # configuração da discretização
-    "n_episodes_trained": 30_000,
-    "rewards_history": rewards,         # lista de recompensas por episódio
+    "n_episodes_trained": 480_000,      # total de episódios (round-robin)
+    "rewards_history": rewards,         # lista de recompensas por episódio (todas as pistas)
+    "rewards_por_pista": {              # opcional, mas útil para o relatório
+        "pistas/pista_01.txt": [...],
+        # ...
+        "pistas/pista_16.txt": [...],
+    },
     "config": {"alpha": 0.1, "gamma": 0.99, "eps_start": 1.0, "eps_end": 0.05},
     "seed": 42,
-    "track_used": "pistas/pista_03.txt",
+    "tracks_used": [f"pistas/pista_{i:02d}.txt" for i in range(1, 17)],  # 01..16
 }
-with open("treinamento/q_learning_K5_pista_03.pkl", "wb") as f:
+with open("treinamento/q_learning.pkl", "wb") as f:
     pickle.dump(estado_para_salvar, f)
 ```
+
+> **Importante:** as pistas 17 e 18 são **holdout** — não devem aparecer em `tracks_used`. O professor verifica isso ao avaliar a generalização.
 
 ## B.4 Lógica recomendada para `solucao.py`
 
@@ -86,7 +93,7 @@ def treinar_ou_carregar(nome, treinar_fn, recarregar=False):
         return resultado
 
 # Uso:
-q_baseline = treinar_ou_carregar("q_learning_K5_pista_03", lambda: treinar_q_learning(env, K=5))
+modelo = treinar_ou_carregar("q_learning", lambda: treinar_round_robin(pistas_treino, K=5))
 ```
 
 Para forçar re-treinamento (útil ao depurar), passe `recarregar=True` ou simplesmente delete o arquivo `.pkl`.
