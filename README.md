@@ -185,7 +185,7 @@ chave  = (   1,    4,    1,    2,    0,    2)
 
 Essa tupla é o índice em `Q`. `Q[chave]` é um `np.ndarray` de 5 elementos (um por ação).
 
-**$K = 5$ é fixo neste EP**, por três razões:
+**$K = 5$ é o valor recomendado neste EP**, por três razões (você pode escolher outro, justificando):
 
 1. **Casa com a granularidade da velocidade** — os 5 valores físicos de $v_\text{norm}$ caem em 5 baldes distintos, sem perda de informação nem fragmentação.
 2. **Resolução adequada para o LIDAR** — cada balde cobre 2 células (20% do alcance), o bastante para distinguir "colado na parede" de "com folga".
@@ -234,22 +234,24 @@ A política nunca viu essas pistas — o desempenho ali mede **generalização**
 
 ### 3.2 Hiperparâmetros
 
-Há dois grupos: **parâmetros de orçamento** (fixados pelo EP, para uniformidade entre alunos) e **hiperparâmetros do Q-Learning** (sua escolha consciente, com justificativa no `docs/`).
+**Toda configuração do treinamento é escolha consciente sua, com justificativa obrigatória no `docs/`.** O enunciado descreve o que cada hiperparâmetro faz e as consequências de valores extremos. Cabe a você decidir e defender as escolhas no relatório.
 
-#### Orçamento (fixado pelo EP)
+#### Orçamento de treino
 
-| Parâmetro | Valor |
-|---|---|
-| Episódios por pista no round-robin | 30.000 |
-| Total de episódios no treino | **480.000** (= 30 mil × 16) |
-| Limite de passos por episódio | 500 |
-| Discretização $K$ | 5 (ver §2.2 e [`enunciado/discretizacao.md`](enunciado/discretizacao.md)) |
+- **Episódios totais (round-robin)** — quantos episódios rodar no total, sorteando pista do conjunto de treino a cada um. Mais episódios = mais cobertura, mas custo computacional cresce linearmente.
+    - Poucos episódios: agente não converge, política ruim.
+    - Muitos episódios: convergência boa, mas treino demora muito. Como referência: ~30 mil por pista (480 mil totais) costuma dar 30-60 minutos em CPU.
+- **Limite de passos por episódio (`max_steps`)** — quanto tempo o agente tem em cada episódio antes de truncar.
+    - Valor baixo: episódios curtos, ciclos rápidos, mas agente não vê trajetos longos.
+    - Valor alto: o agente pode aprender com trajetos longos antes de desistir, mas treino fica mais lento.
 
-> **Tempo esperado:** 30-60 minutos em CPU comum. Salve o pickle ao terminar — você não vai querer re-treinar a cada execução.
+#### Discretização
 
-#### Hiperparâmetros do Q-Learning (você escolhe e justifica)
+- **`K` (baldes por dimensão)** — granularidade da tabela `Q`. Discussão completa em §2.2 e [`enunciado/discretizacao.md`](enunciado/discretizacao.md).
+    - `K` pequeno: tabela compacta, treino rápido, mas perde resolução (agente "vê tudo igual").
+    - `K` grande: alta resolução, mas explosão de estados — a tabela $K^6$ pode ficar inviável.
 
-Cada hiperparâmetro tem efeito direto sobre velocidade de convergência e qualidade da política. **Escolha conscientemente** e justifique no relatório em `docs/`.
+#### Q-Learning
 
 - **Taxa de aprendizado $\alpha \in (0, 1]$** — tamanho do passo na atualização TD: $Q(s,a) \leftarrow Q(s,a) + \alpha\,[\text{erro TD}]$.
     - $\alpha$ alto (perto de 1): aprende rápido mas oscila; pode não convergir.
@@ -262,26 +264,26 @@ Cada hiperparâmetro tem efeito direto sobre velocidade de convergência e quali
 - **Política de exploração ($\varepsilon$-greedy)** — com probabilidade $\varepsilon$, escolhe ação aleatória; caso contrário, age gulosamente.
     - $\varepsilon$ alto: muita exploração, cobre mais estados, mas tarda a convergir.
     - $\varepsilon$ baixo: pouca exploração, exploita o que já conhece, pode ficar preso em mínimos locais.
-    - O schedule (como $\varepsilon$ varia ao longo do treino) também importa — decaimento gradual permite começar explorando e terminar exploitando.
+    - O *schedule* (como $\varepsilon$ varia ao longo do treino) também importa — decaimento gradual permite começar explorando e terminar exploitando.
 
-Em [`enunciado/qlearning.md`](enunciado/qlearning.md) há a discussão técnica completa e uma sugestão de partida; cabe a você decidir o que usar.
+Em [`enunciado/qlearning.md`](enunciado/qlearning.md) há a discussão técnica completa e sugestões de partida; cabe a você decidir e justificar.
 
 ### 3.3 Formato dos arquivos de saída
 
 Para **cada pista de holdout** (pista_17 e pista_18), gere um arquivo na raiz do projeto com as métricas da avaliação gulosa:
 
-`q_learning_pista_17.txt` e `q_learning_pista_18.txt`, ambos no template:
+`q_learning_pista_17.txt` e `q_learning_pista_18.txt`, ambos no template (valores abaixo são apenas exemplo — preencha com os seus):
 
 ```
 === Pista: pista_17.txt ===
 Algoritmo: Q-Learning (round-robin em pistas 01-16)
-Episódios totais de treinamento: 480000
-Discretização: K=5
-Estados populados: 8742
-Tempo de chegada (passos): 47
-Velocidade média: 1.31
-Velocidade máxima atingida: 2.0
-Recompensa total: 412.7
+Episódios totais de treinamento: <N>
+Discretização: K=<seu K>
+Estados populados: <N>
+Tempo de chegada (passos): <N>
+Velocidade média: <V>
+Velocidade máxima atingida: <V>
+Recompensa total: <R>
 Sucesso: SIM
 ```
 
@@ -439,7 +441,7 @@ O carro é representado por uma seta direcional (➡️ ⬇️ ⬅️ ⬆️ etc
 
 ### 5.7 Salvamento do modelo
 
-Treinar 480 mil episódios pode demorar 30-60 minutos. Para evitar re-treinar a cada execução, salve a tabela $Q$ via `pickle` em `/treinamento/`. O `solucao.py` já tem `treinar_ou_carregar()` pronta.
+Como o treinamento pode demorar (centenas de milhares de episódios em round-robin levam dezenas de minutos em CPU), salve a tabela $Q$ via `pickle` em `/treinamento/` para evitar re-treinar a cada execução. O `solucao.py` já tem `treinar_ou_carregar()` pronta.
 
 Estrutura esperada:
 
@@ -469,7 +471,7 @@ Mudar esses valores muda o problema. Justifique no relatório.
 
 Para você ter referência sobre o que esperar:
 
-- **Treino (01-16):** com 30k episódios por pista (round-robin, 480k total), o agente costuma convergir bem em 01-12. Nas pistas 13-16 (difíceis, corredor 2-3 células) o aprendizado é parcial — espere taxas de sucesso menores ali mesmo no conjunto de treino.
+- **Treino (01-16):** com orçamento típico (dezenas de milhares de episódios por pista, round-robin), o agente costuma convergir bem em 01-12. Nas pistas 13-16 (difíceis, corredor 2-3 células) o aprendizado é parcial — espere taxas de sucesso menores ali mesmo no conjunto de treino.
 - **Holdout (17-18):** o LIDAR é local, então padrões aprendidos em uma pista (ex.: "parede frontal próxima + corredor abre à direita → vire") transferem para outras com geometria parecida. **Generalização razoável é esperada**, mas com queda em relação ao treino — quanto, é o que o relatório deve quantificar.
 - **Se o agente colidir muito em 17-18 mas bem no treino:** sinal claro de overfitting à geometria específica das pistas de treino. Discussão importante para o relatório.
 - **Curva de aprendizado plana em $-100$:** o agente nunca chega ao fim e sempre colide. Aumente `max_steps`, ajuste o schedule de $\varepsilon$, ou aumente o budget de episódios.

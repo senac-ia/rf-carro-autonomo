@@ -29,7 +29,7 @@ O EP avalia a capacidade do agente de **generalizar** para pistas não vistas; t
 
 ## Salvamento do modelo treinado
 
-Como o treinamento (480 mil episódios) pode demorar 30-60 minutos em CPU, você **deve salvar o modelo treinado em disco**. Use `pickle` (ver [`anexo_b_pickle.md`](anexo_b_pickle.md)).
+Como o treinamento (centenas de milhares de episódios em round-robin) pode demorar dezenas de minutos em CPU, você **deve salvar o modelo treinado em disco**. Use `pickle` (ver [`anexo_b_pickle.md`](anexo_b_pickle.md)).
 
 Salve **um único arquivo**, em `/treinamento/qlearning.pkl`:
 
@@ -62,8 +62,8 @@ O relatório obrigatoriamente cobre:
 ### Em apresentação
 
 - **Representação do espaço de estados:**
-    - Como você implementou a discretização do vetor de 6 floats com $K = 5$?
-    - Qual o tamanho real da tabela $Q$ ao final do treinamento? Como esse número se compara ao máximo teórico de $5^6 \times 5 = 78{.}125$ entradas?
+    - Como você implementou a discretização do vetor de 6 floats? Qual $K$ você escolheu e por quê?
+    - Qual o tamanho real da tabela $Q$ ao final do treinamento? Como esse número se compara ao máximo teórico ($K^6 \times 5$ entradas)?
 - **Espaço de ações:** como as 5 ações foram codificadas?
 - **Função de recompensa:** como o reward shaping foi implementado? Você experimentou variações?
 - **Política de exploração:** schedule de $\varepsilon$, justificativa.
@@ -75,7 +75,7 @@ O relatório obrigatoriamente cobre:
 ### Em código
 
 - **Implementação do Q-Learning** do zero.
-- **Função de discretização** com $K = 5$.
+- **Função de discretização** (com o $K$ que você escolheu).
 - **Loop de treinamento round-robin** nas pistas 01-16, que registra histórico de recompensas por episódio (salvo no pickle do modelo).
 - **Loop de avaliação** com $\varepsilon = 0$ nas pistas de holdout (17 e 18), que gera `q_learning_pista_17.txt` e `q_learning_pista_18.txt`.
 - **Inspeção da política final** via animação no terminal (`renderizar_episodio` em `src/visualize.py`) nas pistas de holdout — descreva no relatório o que observou.
@@ -84,7 +84,7 @@ O relatório obrigatoriamente cobre:
 ### Critérios de avaliação
 
 - Explicação da lógica do problema e da modelagem do MDP.
-- Explicação da discretização adotada (por que $K = 5$ funciona bem aqui).
+- Explicação da discretização adotada (escolha de $K$ e justificativa).
 - Explicação das funções principais e estrutura do código.
 - Demonstração dos resultados (curva de aprendizado em formato textual, animação do agente no terminal, métricas nas pistas de holdout).
 - **Análise crítica de generalização:** o que a diferença treino-vs-holdout revela sobre a representação de estado (LIDAR local) e a capacidade do Q-Learning tabular?
