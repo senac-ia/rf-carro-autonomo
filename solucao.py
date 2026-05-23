@@ -5,7 +5,7 @@ Você deve implementar:
     - AgenteQLearning  (tabular)
 
 E preencher main() para orquestrar:
-    1. Treinamento round-robin nas pistas 01-16 → salva treinamento/q_learning.pkl.
+    1. Treinamento round-robin nas pistas 01-16 → salva treinamento/qlearning.pkl.
     2. Avaliação gulosa (ε = 0) nas pistas de holdout 17 e 18 → gera
        q_learning_pista_17.txt e q_learning_pista_18.txt (formato do README §3.3).
 
@@ -232,7 +232,7 @@ def main():
     #         "tracks_used": PISTAS_TREINO,
     #     }
     #
-    # modelo = treinar_ou_carregar("q_learning", fn_treinar, recarregar=args.recarregar)
+    # modelo = treinar_ou_carregar("qlearning", fn_treinar, recarregar=args.recarregar)
 
     # ─── Avaliação ─────────────────────────────────────────────────────────
     # Reconstrói o agente a partir do pickle (apenas Q-table + K — sem treinar mais).

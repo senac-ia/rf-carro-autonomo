@@ -31,7 +31,7 @@ O EP avalia a capacidade do agente de **generalizar** para pistas não vistas; t
 
 Como o treinamento (480 mil episódios) pode demorar 30-60 minutos em CPU, você **deve salvar o modelo treinado em disco**. Use `pickle` (ver [`anexo_b_pickle.md`](anexo_b_pickle.md)).
 
-Salve **um único arquivo**, em `/treinamento/q_learning.pkl`:
+Salve **um único arquivo**, em `/treinamento/qlearning.pkl`:
 
 ```
 seu-projeto/
@@ -41,14 +41,21 @@ seu-projeto/
 ├── pistas/
 ├── docs/                      ← seu relatório vai aqui
 └── treinamento/
-    └── q_learning.pkl         ← Q-Learning treinado em round-robin nas 16 pistas
+    └── qlearning.pkl         ← Q-Learning treinado em round-robin nas 16 pistas
 ```
 
 Esse arquivo deve ser **commitado no repositório**. Isso permite ao professor reproduzir a avaliação sem re-treinar.
 
-## Relatório
+## Relatório (em `docs/`)
 
-O relatório vai em **`docs/`** do seu repositório (sugestão de nome: `docs/relatorio.md`). O conteúdo específico será detalhado adiante; em linhas gerais, foca nas pistas de **holdout (17 e 18)** — afinal, é nelas que o agente é de fato testado.
+**Toda a documentação do EP fica em `docs/`** do seu repositório. Sugestão: `docs/relatorio.md` como arquivo principal, com sub-arquivos para tópicos densos se necessário.
+
+O relatório obrigatoriamente cobre:
+
+1. **Escolha dos hiperparâmetros** — para $\alpha$, $\gamma$ e $\varepsilon$-schedule, qual valor você usou e por quê? Houve experimentação?
+2. **Mecânica de exploração** — como o agente escolhe entre explorar e exploitar a cada passo? Houve variações além do $\varepsilon$-greedy clássico?
+3. **Implementação** — modelagem do MDP, estrutura da tabela $Q$, discretização, esquema de treinamento round-robin.
+4. **Resultado nas pistas de holdout 17 e 18** — métricas, comparação com treino, análise de generalização, inspeção qualitativa via `src/visualize.py`.
 
 ## O que será avaliado
 
@@ -72,7 +79,7 @@ O relatório vai em **`docs/`** do seu repositório (sugestão de nome: `docs/re
 - **Loop de treinamento round-robin** nas pistas 01-16, que registra histórico de recompensas por episódio (salvo no pickle do modelo).
 - **Loop de avaliação** com $\varepsilon = 0$ nas pistas de holdout (17 e 18), que gera `q_learning_pista_17.txt` e `q_learning_pista_18.txt`.
 - **Inspeção da política final** via animação no terminal (`renderizar_episodio` em `src/visualize.py`) nas pistas de holdout — descreva no relatório o que observou.
-- **Salvamento e carregamento** do modelo via pickle único em `/treinamento/q_learning.pkl`.
+- **Salvamento e carregamento** do modelo via pickle único em `/treinamento/qlearning.pkl`.
 
 ### Critérios de avaliação
 

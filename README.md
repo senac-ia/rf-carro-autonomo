@@ -221,7 +221,7 @@ for episodio in range(n_episodios_total):
 
 #### Salvamento
 
-Ao fim do treinamento, salve **um único pickle**: `treinamento/q_learning.pkl`. Esse arquivo contém a tabela $Q$ final (compartilhada entre todas as pistas — afinal, a representação de estado é local via LIDAR) e os metadados do treinamento.
+Ao fim do treinamento, salve **um único pickle**: `treinamento/qlearning.pkl`. Esse arquivo contém a tabela $Q$ final (compartilhada entre todas as pistas — afinal, a representação de estado é local via LIDAR) e os metadados do treinamento.
 
 #### Avaliação
 
@@ -232,20 +232,39 @@ Para gerar os arquivos de saída, **carregue o pickle** e rode com $\varepsilon 
 
 A política nunca viu essas pistas — o desempenho ali mede **generalização**, não memorização.
 
-### 3.2 Hiperparâmetros sugeridos
+### 3.2 Hiperparâmetros
 
-| Hiperparâmetro | Valor |
+Há dois grupos: **parâmetros de orçamento** (fixados pelo EP, para uniformidade entre alunos) e **hiperparâmetros do Q-Learning** (sua escolha consciente, com justificativa no `docs/`).
+
+#### Orçamento (fixado pelo EP)
+
+| Parâmetro | Valor |
 |---|---|
-| Episódios por pista (round-robin) | 30.000 |
+| Episódios por pista no round-robin | 30.000 |
 | Total de episódios no treino | **480.000** (= 30 mil × 16) |
 | Limite de passos por episódio | 500 |
-| Taxa de aprendizado $\alpha$ | 0,1 |
-| Desconto $\gamma$ | 0,99 |
-| Exploração $\varepsilon$ | decai linearmente de 1,0 a 0,05 nos primeiros 80% dos episódios |
+| Discretização $K$ | 5 (ver §2.2 e [`enunciado/discretizacao.md`](enunciado/discretizacao.md)) |
 
 > **Tempo esperado:** 30-60 minutos em CPU comum. Salve o pickle ao terminar — você não vai querer re-treinar a cada execução.
 
-Use estes valores como ponto de partida; justifique no relatório qualquer desvio.
+#### Hiperparâmetros do Q-Learning (você escolhe e justifica)
+
+Cada hiperparâmetro tem efeito direto sobre velocidade de convergência e qualidade da política. **Escolha conscientemente** e justifique no relatório em `docs/`.
+
+- **Taxa de aprendizado $\alpha \in (0, 1]$** — tamanho do passo na atualização TD: $Q(s,a) \leftarrow Q(s,a) + \alpha\,[\text{erro TD}]$.
+    - $\alpha$ alto (perto de 1): aprende rápido mas oscila; pode não convergir.
+    - $\alpha$ baixo (perto de 0): aprende devagar mas estável.
+
+- **Fator de desconto $\gamma \in [0, 1)$** — quanto o agente valoriza recompensas futuras.
+    - $\gamma$ próximo de 1: agente "vê longe", planeja para o futuro distante.
+    - $\gamma$ próximo de 0: agente míope, prioriza recompensa imediata.
+
+- **Política de exploração ($\varepsilon$-greedy)** — com probabilidade $\varepsilon$, escolhe ação aleatória; caso contrário, age gulosamente.
+    - $\varepsilon$ alto: muita exploração, cobre mais estados, mas tarda a convergir.
+    - $\varepsilon$ baixo: pouca exploração, exploita o que já conhece, pode ficar preso em mínimos locais.
+    - O schedule (como $\varepsilon$ varia ao longo do treino) também importa — decaimento gradual permite começar explorando e terminar exploitando.
+
+Em [`enunciado/qlearning.md`](enunciado/qlearning.md) há a discussão técnica completa e uma sugestão de partida; cabe a você decidir o que usar.
 
 ### 3.3 Formato dos arquivos de saída
 
@@ -272,15 +291,33 @@ Sucesso: SIM
 
 ## 4. Relatório
 
-O relatório deve ser entregue em **`docs/`** do seu repositório (`docs/relatorio.md` ou similar), focado nas pistas de **holdout (17 e 18)** — afinal, é nelas que o agente é de fato testado.
+Toda a documentação do EP deve estar em **`docs/`** do seu repositório (sugestão de nome do arquivo principal: `docs/relatorio.md`). O conteúdo detalhado será definido adiante, mas o relatório obrigatoriamente deve cobrir:
 
-O conteúdo específico do relatório será detalhado adiante. Em linhas gerais, deve cobrir:
+### 4.1 Escolha dos hiperparâmetros (com justificativa)
+
+Para cada um dos hiperparâmetros listados em §3.2 (que você escolhe):
+
+- **Taxa de aprendizado $\alpha$:** qual valor você usou? Por quê? Você testou outros?
+- **Fator de desconto $\gamma$:** qual valor? Que tipo de horizonte de planejamento isso implica?
+- **Política $\varepsilon$-greedy:** qual o $\varepsilon$ inicial, $\varepsilon$ final e o schedule (linear, exponencial, etc.)? Em que ponto do treino o agente passa a explorar pouco?
+
+### 4.2 Mecânica da exploração
+
+Descreva **como o agente escolhe as ações durante o treino** — não basta dizer "ε-greedy", mostre a lógica:
+
+- Como o sorteio entre "explorar" e "explorar gulosamente" é implementado?
+- Se você fez variações (ex.: exploração concentrada em estados pouco visitados, action masking quando colisão é certa, decaimento por estado), explique aqui.
+
+### 4.3 Implementação geral
 
 - Modelagem do MDP (estados, ações, recompensas).
-- Implementação do Q-Learning (estrutura da tabela $Q$, discretização, $\varepsilon$-schedule).
+- Estrutura da tabela $Q$ (dict ou ndarray), discretização.
 - Esquema de treinamento round-robin nas 16 pistas (curva de aprendizado, número de estados populados).
-- **Resultado nas pistas de holdout 17 e 18** — quão bem o agente generaliza? Há diferença grande entre treino e teste?
-- Inspeção qualitativa via animação no terminal (`renderizar_episodio` em `src/visualize.py`).
+
+### 4.4 Resultado nas pistas de holdout 17 e 18
+
+- Quão bem o agente generaliza? Há diferença grande entre treino e teste?
+- Inspeção qualitativa via animação no terminal (`PYTHONPATH=src python src/visualize.py pistas/pista_17.txt`) — o `src/visualize.py` carrega automaticamente o pickle e roda a política aprendida.
 
 ---
 
@@ -363,14 +400,29 @@ while not done:
 
 Veja `solucao.py` — placeholder de `AgenteQLearning` e função `main()` que orquestra:
 
-1. **Treinamento** (round-robin nas pistas 01-16) → salva `treinamento/q_learning.pkl`.
+1. **Treinamento** (round-robin nas pistas 01-16) → salva `treinamento/qlearning.pkl`.
 2. **Avaliação** (gulosa nas pistas 17 e 18) → gera `q_learning_pista_17.txt` e `q_learning_pista_18.txt`.
 
 Se o pickle já existe, o treino é pulado e o agente é carregado direto para avaliação. Para forçar re-treinamento, delete o `.pkl` ou passe `--recarregar`.
 
 ### 5.6 Visualização
 
-A função `renderizar_episodio` no `src/visualize.py` recebe seu agente treinado e mostra o carro correndo a pista **diretamente no seu terminal**, com animação fluida via códigos ANSI. Use isso para depuração — ver o agente em ação revela bugs que números não revelam:
+A função `renderizar_episodio` no `src/visualize.py` mostra o carro correndo a pista **diretamente no seu terminal**, com animação fluida via códigos ANSI. Use isso para depuração — ver o agente em ação revela bugs que números não revelam.
+
+**Rodando uma pista nova com o modelo treinado** — basta passar a pista como argumento:
+
+```bash
+PYTHONPATH=src python src/visualize.py pistas/pista_18.txt
+```
+
+O `visualize.py` carrega automaticamente `treinamento/qlearning.pkl` (se existir) e usa a tabela $Q$ para escolher as ações. Se o pickle não existir ainda, cai num agente trivial (apenas para checar que o ambiente está rodando).
+
+**Contrato do pickle** (espelha o documentado em [`enunciado/anexo_b_pickle.md`](enunciado/anexo_b_pickle.md)):
+
+- `q_table`: `dict[tuple[int, ...], np.ndarray]` (chave discretizada → Q-valores).
+- `discretization_K`: int (default 5).
+
+Se você quiser visualizar com sua própria política sem salvar pickle, pode chamar diretamente da REPL:
 
 ```python
 from visualize import renderizar_episodio
@@ -393,7 +445,7 @@ Estrutura esperada:
 
 ```
 treinamento/
-└── q_learning.pkl    ← único arquivo, contém o modelo treinado em pistas 01-16
+└── qlearning.pkl    ← único arquivo, contém o modelo treinado em pistas 01-16
 ```
 
 O `.pkl` deve guardar pelo menos: tabela $Q$, $K$ usado, nº total de episódios, hiperparâmetros, seed, **lista das pistas usadas no treino** e histórico de recompensas (em janela móvel de 100). Esse arquivo deve ser commitado no repositório — assim o professor reproduz a avaliação sem re-treinar.

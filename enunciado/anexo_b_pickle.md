@@ -19,7 +19,7 @@ import pickle
 
 dados = {"q_table": minha_q_table, "config": {"alpha": 0.1, "gamma": 0.99}}
 
-with open("treinamento/q_learning.pkl", "wb") as f:   # "wb" = write binary
+with open("treinamento/qlearning.pkl", "wb") as f:   # "wb" = write binary
     pickle.dump(dados, f)
 ```
 
@@ -28,7 +28,7 @@ with open("treinamento/q_learning.pkl", "wb") as f:   # "wb" = write binary
 ```python
 import pickle
 
-with open("treinamento/q_learning.pkl", "rb") as f:   # "rb" = read binary
+with open("treinamento/qlearning.pkl", "rb") as f:   # "rb" = read binary
     dados = pickle.load(f)
 
 minha_q_table = dados["q_table"]
@@ -39,7 +39,7 @@ Pronto. Não há mais nada de fundamental.
 
 ## B.3 O que salvar para o Q-Learning
 
-Salve um dicionário com tudo que você precisa para reproduzir o agente. Como o EP usa **um único modelo treinado em round-robin** nas 16 pistas de treino, **o pickle também é único** (`treinamento/q_learning.pkl`):
+Salve um dicionário com tudo que você precisa para reproduzir o agente. Como o EP usa **um único modelo treinado em round-robin** nas 16 pistas de treino, **o pickle também é único** (`treinamento/qlearning.pkl`):
 
 ```python
 estado_para_salvar = {
@@ -56,7 +56,7 @@ estado_para_salvar = {
     "seed": 42,
     "tracks_used": [f"pistas/pista_{i:02d}.txt" for i in range(1, 17)],  # 01..16
 }
-with open("treinamento/q_learning.pkl", "wb") as f:
+with open("treinamento/qlearning.pkl", "wb") as f:
     pickle.dump(estado_para_salvar, f)
 ```
 
@@ -93,7 +93,7 @@ def treinar_ou_carregar(nome, treinar_fn, recarregar=False):
         return resultado
 
 # Uso:
-modelo = treinar_ou_carregar("q_learning", lambda: treinar_round_robin(pistas_treino, K=5))
+modelo = treinar_ou_carregar("qlearning", lambda: treinar_round_robin(pistas_treino, K=5))
 ```
 
 Para forçar re-treinamento (útil ao depurar), passe `recarregar=True` ou simplesmente delete o arquivo `.pkl`.

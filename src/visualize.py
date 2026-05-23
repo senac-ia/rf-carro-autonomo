@@ -167,13 +167,46 @@ def renderizar_episodio(
 
 if __name__ == "__main__":
     import sys
+    import pickle
+    from pathlib import Path
+
     pista = sys.argv[1] if len(sys.argv) > 1 else "pistas/pista_01.txt"
     env = AmbienteCarro(pista)
 
-    # Política trivial: acelera 3x e segue em frente
-    contador = [0]
-    def agente_trivial(obs):
-        contador[0] += 1
-        return 1 if contador[0] <= 3 else 0
+    # Tenta carregar modelo treinado em treinamento/qlearning.pkl
+    # Contrato do pickle (ver enunciado/anexo_b_pickle.md):
+    #   - "q_table": dict[tuple[int,...], np.ndarray]  — chave discretizada → Q-valores
+    #   - "discretization_K": int (default 5)
+    raiz = Path(__file__).resolve().parent.parent
+    caminho_modelo = raiz / "treinamento" / "qlearning.pkl"
 
-    reward_total, n_passos, info = renderizar_episodio(env, agente_trivial, fps=4)
+    if caminho_modelo.exists():
+        print(f"Carregando modelo treinado de {caminho_modelo} ...")
+        with open(caminho_modelo, "rb") as f:
+            modelo = pickle.load(f)
+        q_table = modelo["q_table"]
+        K = modelo.get("discretization_K", 5)
+
+        def discretizar(obs):
+            return tuple(min(int(v * K), K - 1) for v in obs)
+
+        def politica_treinada(obs):
+            chave = discretizar(obs)
+            if isinstance(q_table, dict):
+                if chave not in q_table:
+                    return 0  # estado nunca visto no treino → "não fazer nada"
+                valores = q_table[chave]
+            else:
+                valores = q_table[chave]  # np.ndarray multidimensional
+            return int(np.argmax(valores))
+
+        agente_fn = politica_treinada
+    else:
+        print(f"⚠️  {caminho_modelo} não encontrado — usando agente trivial (acelera 3x).")
+        contador = [0]
+        def agente_trivial(obs):
+            contador[0] += 1
+            return 1 if contador[0] <= 3 else 0
+        agente_fn = agente_trivial
+
+    reward_total, n_passos, info = renderizar_episodio(env, agente_fn, fps=4)
