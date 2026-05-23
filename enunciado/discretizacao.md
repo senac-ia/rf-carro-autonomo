@@ -6,7 +6,7 @@ Este documento explica:
 
 1. A técnica de discretização usada (binning uniforme).
 2. Como o trade-off de $K$ funciona.
-3. Por que $K = 5$ é o valor recomendado neste EP.
+3. Por que $K = 5$ neste EP.
 4. Um exemplo passo a passo de como o vetor de 6 floats vira a chave da tabela $Q$.
 
 ---
@@ -76,9 +76,9 @@ O vetor tem **6 dimensões** (5 raios + velocidade). O número máximo de estado
 
 ---
 
-## 3. Por que $K = 5$ é o valor recomendado neste EP
+## 3. Por que $K = 5$ neste EP
 
-Três razões convergem para $K = 5$. Você pode escolher outro $K$ — desde que justifique no relatório.
+Três razões convergem para $K = 5$:
 
 ### 3.1 Casa exatamente com a granularidade da velocidade
 

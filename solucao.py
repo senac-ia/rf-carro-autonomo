@@ -7,7 +7,7 @@ Você deve implementar:
 E preencher main() para orquestrar:
     1. Treinamento round-robin nas pistas 01-16 → salva treinamento/qlearning.pkl.
     2. Avaliação gulosa (ε = 0) nas pistas de holdout 17 e 18 → gera
-       q_learning_pista_17.txt e q_learning_pista_18.txt (formato do README §3.3).
+       q_learning_pista_17.txt e q_learning_pista_18.txt (formato do README §4.3).
 
 Uso:
     python solucao.py                         # treina (se necessário) + avalia em 17 e 18
@@ -177,14 +177,13 @@ def treinar_ou_carregar(nome, fn_treinar, recarregar=False):
 # GERAÇÃO DOS ARQUIVOS DE SAÍDA
 # ============================================================================
 
-def escrever_saida(caminho, nome_algoritmo, pista, resultado_avaliacao, n_episodios_treinados, K):
+def escrever_saida(caminho, nome_algoritmo, pista, resultado_avaliacao, n_episodios_treinados):
     """
-    Escreve um arquivo no formato esperado pelo README §3.3:
+    Escreve um arquivo no formato esperado pelo README §4.3:
 
     === Pista: <nome> ===
     Algoritmo: Q-Learning (round-robin em pistas 01-16)
     Episódios totais de treinamento: N
-    Discretização: K=<k>
     Estados populados: N
     Tempo de chegada (passos): N
     Velocidade média: V
@@ -192,7 +191,7 @@ def escrever_saida(caminho, nome_algoritmo, pista, resultado_avaliacao, n_episod
     Recompensa total: R
     Sucesso: SIM/NAO
     """
-    # TODO: implementar conforme formato do README §3.3
+    # TODO: implementar conforme formato do README §4.3
     raise NotImplementedError
 
 
@@ -206,7 +205,7 @@ def main():
                         help="Episódios de treino por pista no round-robin (default: 30000)")
     parser.add_argument("--max-passos", type=int, default=500)
     parser.add_argument("--K", type=int, default=5,
-                        help="Baldes da discretização (padrão: 5; ver README §2.2 — você escolhe e justifica)")
+                        help="Baldes da discretização (default: 5; ver README §3.2)")
     parser.add_argument("--recarregar", action="store_true",
                         help="Força re-treino mesmo se o pickle existir")
     parser.add_argument("--avaliar", type=str, default=None,
@@ -244,7 +243,7 @@ def main():
     #     resultado = avaliar(env, agente_avaliacao)
     #     nome_pista = Path(pista).stem  # "pista_17"
     #     escrever_saida(f"q_learning_{nome_pista}.txt", "Q-Learning",
-    #                    pista, resultado, modelo["n_episodes_trained"], args.K)
+    #                    pista, resultado, modelo["n_episodes_trained"])
 
     print("\nPronto.")
 
