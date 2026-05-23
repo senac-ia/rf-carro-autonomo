@@ -33,13 +33,13 @@ Não há unidade de tempo “real” no problema — um “passo” é uma unida
 
 A velocidade muda **apenas por ação do agente**. Não há fricção, não há inércia continuada — se o agente não fizer nada, $v$ permanece igual.
 
-| Ação | Efeito em $v$ |
+| Ação | Efeito em `v` |
 | --- | --- |
-| 0 (nada) | $v$ inalterada |
-| 1 (acelerar) | $v \leftarrow \min(v + 0{,}5,\ V_{\max})$ |
-| 2 (frear) | $v \leftarrow \max(v - 0{,}5,\ 0)$ |
-| 3 (virar esquerda) | $v$ inalterada (só $\theta$ muda) |
-| 4 (virar direita) | $v$ inalterada (só $\theta$ muda) |
+| 0 (nada) | `v` inalterada |
+| 1 (acelerar) | `v ← min(v + 0,5, V_max)` |
+| 2 (frear) | `v ← max(v - 0,5, 0)` |
+| 3 (virar esquerda) | `v` inalterada (só `θ` muda) |
+| 4 (virar direita) | `v` inalterada (só `θ` muda) |
 
 Isso é uma **física idealizada** — em um carro real, frenagem leva tempo, há fricção do ar, há inércia. No EP, ignoramos tudo isso para simplificar o aprendizado.
 

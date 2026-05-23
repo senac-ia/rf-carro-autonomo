@@ -59,10 +59,10 @@ Espaço discreto de **5 ações**:
 | Ação | Efeito |
 | --- | --- |
 | 0 | Nada (mantém velocidade e ângulo) |
-| 1 | Acelerar ($v \leftarrow \min(v + 0{,}5,\ V_{\max})$) |
-| 2 | Frear ($v \leftarrow \max(v - 0{,}5,\ 0)$) |
-| 3 | Virar à esquerda ($\theta \leftarrow \theta - 30°$) |
-| 4 | Virar à direita ($\theta \leftarrow \theta + 30°$) |
+| 1 | Acelerar — `v ← min(v + 0,5, V_max)` |
+| 2 | Frear — `v ← max(v - 0,5, 0)` |
+| 3 | Virar à esquerda — `θ ← θ - 30°` |
+| 4 | Virar à direita — `θ ← θ + 30°` |
 
 ### 1.4 Observação (o que o agente vê)
 
